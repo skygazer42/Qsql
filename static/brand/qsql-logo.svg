@@ -1,11 +1,16 @@
 <svg
-  width="220"
+  width="820"
   height="220"
-  viewBox="0 0 220 220"
+  viewBox="0 0 820 220"
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
 >
-  <g id="qsql-core-mark" transform="translate(12 12)">
+  <defs>
+    <filter id="qsql-wordmark-shadow" x="0" y="0" width="280" height="220" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#1E3A8A" flood-opacity="0.12" />
+    </filter>
+  </defs>
+  <g id="qsql-core-mark" filter="url(#qsql-wordmark-shadow)" transform="translate(12 12)">
     <circle cx="98" cy="98" r="74" stroke="#1E63E9" stroke-width="24" />
     <circle cx="98" cy="98" r="42" fill="white" />
     <rect x="98" y="38" width="86" height="120" fill="white" />
@@ -24,4 +29,15 @@
       stroke-linejoin="round"
     />
   </g>
+  <text
+    x="246"
+    y="132"
+    fill="#132247"
+    font-family="Inter, Segoe UI, Arial, sans-serif"
+    font-size="112"
+    font-weight="800"
+    letter-spacing="2"
+  >
+    QSQL
+  </text>
 </svg>

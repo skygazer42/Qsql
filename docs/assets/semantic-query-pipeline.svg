@@ -1,0 +1,73 @@
+<svg width="1600" height="560" viewBox="0 0 1600 560" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pipe-brand" x1="120" y1="120" x2="1480" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#14B8A6"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+    <marker id="pipe-arrow" markerWidth="9" markerHeight="9" refX="7.6" refY="4.5" orient="auto">
+      <path d="M0 0L9 4.5L0 9V0Z" fill="#3B82F6"/>
+    </marker>
+  </defs>
+
+  <rect width="1600" height="560" rx="32" fill="#F8FAFC"/>
+  <circle cx="1400" cy="82" r="140" fill="#DBEAFE" opacity="0.32"/>
+  <circle cx="170" cy="486" r="120" fill="#CCFBF1" opacity="0.42"/>
+
+  <text x="72" y="80" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="38" font-weight="800">语义查询主链路</text>
+  <text x="72" y="116" fill="#475569" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="22" font-weight="500">QSQL 把问题理解、语义约束、SQL 构建和只读执行放到一条明确的工程链路里。</text>
+
+  <g>
+    <rect x="72" y="176" width="188" height="156" rx="26" fill="#FFFFFF" stroke="#D8E1EC" stroke-width="2"/>
+    <circle cx="116" cy="220" r="20" fill="url(#pipe-brand)"/>
+    <text x="109" y="227" fill="#FFFFFF" font-family="Inter, sans-serif" font-size="18" font-weight="800">1</text>
+    <text x="104" y="272" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="24" font-weight="800">请求进入</text>
+    <text x="104" y="306" fill="#475569" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="18" font-weight="500">问题、数据集、上下文</text>
+
+    <rect x="292" y="176" width="188" height="156" rx="26" fill="#FFFFFF" stroke="#D8E1EC" stroke-width="2"/>
+    <circle cx="336" cy="220" r="20" fill="url(#pipe-brand)"/>
+    <text x="329" y="227" fill="#FFFFFF" font-family="Inter, sans-serif" font-size="18" font-weight="800">2</text>
+    <text x="324" y="272" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="24" font-weight="800">加载目录</text>
+    <text x="324" y="306" fill="#475569" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="18" font-weight="500">指标、维度、别名、口径</text>
+
+    <rect x="512" y="176" width="188" height="156" rx="26" fill="#ECFEFF" stroke="#99F6E4" stroke-width="2"/>
+    <circle cx="556" cy="220" r="20" fill="url(#pipe-brand)"/>
+    <text x="549" y="227" fill="#FFFFFF" font-family="Inter, sans-serif" font-size="18" font-weight="800">3</text>
+    <text x="544" y="272" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="24" font-weight="800">语义解析</text>
+    <text x="544" y="306" fill="#475569" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="18" font-weight="500">pydantic-ai 产出结构化草稿</text>
+
+    <rect x="732" y="176" width="188" height="156" rx="26" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="2"/>
+    <circle cx="776" cy="220" r="20" fill="url(#pipe-brand)"/>
+    <text x="769" y="227" fill="#FFFFFF" font-family="Inter, sans-serif" font-size="18" font-weight="800">4</text>
+    <text x="764" y="272" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="24" font-weight="800">结构校验</text>
+    <text x="764" y="306" fill="#475569" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="18" font-weight="500">语义对象和执行计划校验</text>
+
+    <rect x="952" y="176" width="188" height="156" rx="26" fill="#FFFFFF" stroke="#D8E1EC" stroke-width="2"/>
+    <circle cx="996" cy="220" r="20" fill="url(#pipe-brand)"/>
+    <text x="989" y="227" fill="#FFFFFF" font-family="Inter, sans-serif" font-size="18" font-weight="800">5</text>
+    <text x="984" y="272" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="24" font-weight="800">SQL 构建</text>
+    <text x="984" y="306" fill="#475569" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="18" font-weight="500">受控规则生成最终查询</text>
+
+    <rect x="1172" y="176" width="188" height="156" rx="26" fill="#FFFFFF" stroke="#D8E1EC" stroke-width="2"/>
+    <circle cx="1216" cy="220" r="20" fill="url(#pipe-brand)"/>
+    <text x="1209" y="227" fill="#FFFFFF" font-family="Inter, sans-serif" font-size="18" font-weight="800">6</text>
+    <text x="1204" y="272" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="24" font-weight="800">只读执行</text>
+    <text x="1204" y="306" fill="#475569" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="18" font-weight="500">执行前拦截非查询 SQL</text>
+
+    <rect x="1392" y="176" width="136" height="156" rx="26" fill="#FFFFFF" stroke="#D8E1EC" stroke-width="2"/>
+    <circle cx="1436" cy="220" r="20" fill="url(#pipe-brand)"/>
+    <text x="1429" y="227" fill="#FFFFFF" font-family="Inter, sans-serif" font-size="18" font-weight="800">7</text>
+    <text x="1414" y="272" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="24" font-weight="800">结果返回</text>
+    <text x="1414" y="306" fill="#475569" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="18" font-weight="500">表格、卡片、图形</text>
+  </g>
+
+  <path d="M260 254H292" stroke="#3B82F6" stroke-width="4" marker-end="url(#pipe-arrow)"/>
+  <path d="M480 254H512" stroke="#3B82F6" stroke-width="4" marker-end="url(#pipe-arrow)"/>
+  <path d="M700 254H732" stroke="#3B82F6" stroke-width="4" marker-end="url(#pipe-arrow)"/>
+  <path d="M920 254H952" stroke="#3B82F6" stroke-width="4" marker-end="url(#pipe-arrow)"/>
+  <path d="M1140 254H1172" stroke="#3B82F6" stroke-width="4" marker-end="url(#pipe-arrow)"/>
+  <path d="M1360 254H1392" stroke="#3B82F6" stroke-width="4" marker-end="url(#pipe-arrow)"/>
+
+  <rect x="72" y="392" width="1456" height="104" rx="28" fill="#0F172A"/>
+  <text x="112" y="438" fill="#FFFFFF" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="24" font-weight="800">链路约束</text>
+  <text x="112" y="472" fill="#CBD5E1" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="18" font-weight="500">不允许模型直接输出最终 SQL · 不做 silent fallback · 必须绑定数据集语义目录 · 执行前强制只读校验</text>
+</svg>

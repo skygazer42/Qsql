@@ -1,0 +1,89 @@
+<svg width="1600" height="920" viewBox="0 0 1600 920" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="arch-brand" x1="180" y1="120" x2="1440" y2="820" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#14B8A6"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+    <marker id="arch-arrow" markerWidth="9" markerHeight="9" refX="7.6" refY="4.5" orient="auto">
+      <path d="M0 0L9 4.5L0 9V0Z" fill="#3B82F6"/>
+    </marker>
+    <filter id="arch-shadow" x="-30" y="-30" width="1660" height="980" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="920" rx="32" fill="#F8FAFC"/>
+  <circle cx="1320" cy="112" r="180" fill="#DBEAFE" opacity="0.35"/>
+  <circle cx="210" cy="810" r="150" fill="#CCFBF1" opacity="0.45"/>
+
+  <text x="72" y="88" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="40" font-weight="800">QSQL 架构总览</text>
+  <text x="72" y="126" fill="#475569" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="22" font-weight="500">围绕语义解析、受控 SQL、元数据运维和结构化观测构建的数据问答运行时。</text>
+
+  <g filter="url(#arch-shadow)">
+    <rect x="72" y="180" width="260" height="382" rx="28" fill="#FFFFFF" stroke="#D8E1EC" stroke-width="2"/>
+    <text x="106" y="228" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="28" font-weight="800">入口层</text>
+    <text x="106" y="260" fill="#64748B" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="18" font-weight="500">问题从这里进入 QSQL</text>
+    <rect x="106" y="302" width="192" height="72" rx="22" fill="#ECFEFF" stroke="#99F6E4"/>
+    <text x="140" y="347" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="24" font-weight="700">Web 界面</text>
+    <rect x="106" y="396" width="192" height="72" rx="22" fill="#EFF6FF" stroke="#BFDBFE"/>
+    <text x="140" y="441" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="24" font-weight="700">REST API</text>
+    <rect x="106" y="490" width="192" height="72" rx="22" fill="#F8FAFC" stroke="#CBD5E1"/>
+    <text x="140" y="535" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="24" font-weight="700">内部任务</text>
+
+    <rect x="390" y="160" width="774" height="494" rx="32" fill="#FFFFFF" stroke="#D8E1EC" stroke-width="2"/>
+    <rect x="390" y="160" width="774" height="74" rx="32" fill="url(#arch-brand)"/>
+    <text x="434" y="206" fill="#FFFFFF" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="30" font-weight="800">QSQL 运行时</text>
+
+    <rect x="434" y="270" width="300" height="122" rx="24" fill="#F8FAFC" stroke="#D8E1EC"/>
+    <text x="466" y="314" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="24" font-weight="800">请求校验</text>
+    <text x="466" y="348" fill="#475569" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="18" font-weight="500">Pydantic 负责入参和配置约束</text>
+
+    <rect x="782" y="270" width="338" height="122" rx="24" fill="#ECFEFF" stroke="#99F6E4"/>
+    <text x="814" y="314" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="24" font-weight="800">语义编排</text>
+    <text x="814" y="348" fill="#475569" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="18" font-weight="500">加载 catalog，调用 pydantic-ai 解析语义</text>
+
+    <rect x="434" y="432" width="300" height="122" rx="24" fill="#EFF6FF" stroke="#BFDBFE"/>
+    <text x="466" y="476" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="24" font-weight="800">受控 SQL 构建</text>
+    <text x="466" y="510" fill="#475569" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="18" font-weight="500">把语义对象转换成可执行查询计划</text>
+
+    <rect x="782" y="432" width="338" height="122" rx="24" fill="#F8FAFC" stroke="#D8E1EC"/>
+    <text x="814" y="476" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="24" font-weight="800">只读执行</text>
+    <text x="814" y="510" fill="#475569" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="18" font-weight="500">执行前校验 SELECT 约束并返回结构化结果</text>
+
+    <text x="434" y="606" fill="#475569" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="18" font-weight="500">模型负责理解问题，程序负责控制 SQL，运维层负责保证系统长期可管。</text>
+
+    <rect x="1206" y="160" width="322" height="494" rx="32" fill="#FFFFFF" stroke="#D8E1EC" stroke-width="2"/>
+    <text x="1242" y="208" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="30" font-weight="800">运行时输入</text>
+    <rect x="1242" y="248" width="250" height="86" rx="24" fill="#ECFEFF" stroke="#99F6E4"/>
+    <text x="1276" y="300" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="22" font-weight="700">语义目录</text>
+    <rect x="1242" y="360" width="250" height="86" rx="24" fill="#EFF6FF" stroke="#BFDBFE"/>
+    <text x="1276" y="412" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="22" font-weight="700">向量检索</text>
+    <rect x="1242" y="472" width="250" height="86" rx="24" fill="#F8FAFC" stroke="#CBD5E1"/>
+    <text x="1276" y="524" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="22" font-weight="700">元数据仓</text>
+    <rect x="1242" y="584" width="250" height="86" rx="24" fill="#EEF2FF" stroke="#C7D2FE"/>
+    <text x="1276" y="636" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="22" font-weight="700">数据库 / 数仓</text>
+
+    <rect x="350" y="718" width="1178" height="150" rx="32" fill="#FFFFFF" stroke="#D8E1EC" stroke-width="2"/>
+    <text x="394" y="762" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="30" font-weight="800">运维与观测层</text>
+    <rect x="394" y="790" width="282" height="50" rx="18" fill="#F8FAFC" stroke="#CBD5E1"/>
+    <text x="428" y="821" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="20" font-weight="700">结构化事件日志</text>
+    <rect x="712" y="790" width="216" height="50" rx="18" fill="#ECFEFF" stroke="#99F6E4"/>
+    <text x="750" y="821" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="20" font-weight="700">Schema Sync</text>
+    <rect x="960" y="790" width="238" height="50" rx="18" fill="#EFF6FF" stroke="#BFDBFE"/>
+    <text x="994" y="821" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="20" font-weight="700">语义草稿生成</text>
+    <rect x="1228" y="790" width="250" height="50" rx="18" fill="#F8FAFC" stroke="#CBD5E1"/>
+    <text x="1262" y="821" fill="#0F172A" font-family="PingFang SC, Microsoft YaHei, Inter, sans-serif" font-size="20" font-weight="700">任务调度与取消</text>
+  </g>
+
+  <path d="M332 376H434" stroke="#3B82F6" stroke-width="4" marker-end="url(#arch-arrow)"/>
+  <path d="M734 331H782" stroke="#3B82F6" stroke-width="4" marker-end="url(#arch-arrow)"/>
+  <path d="M952 394V432" stroke="#3B82F6" stroke-width="4" marker-end="url(#arch-arrow)"/>
+  <path d="M584 394V432" stroke="#3B82F6" stroke-width="4" marker-end="url(#arch-arrow)"/>
+  <path d="M1120 493H1242" stroke="#3B82F6" stroke-width="4" marker-end="url(#arch-arrow)"/>
+  <path d="M1242 291H1120" stroke="#14B8A6" stroke-width="4" marker-end="url(#arch-arrow)"/>
+  <path d="M1242 403H1120" stroke="#14B8A6" stroke-width="4" marker-end="url(#arch-arrow)"/>
+  <path d="M1242 515H1120" stroke="#14B8A6" stroke-width="4" marker-end="url(#arch-arrow)"/>
+  <path d="M1368 670V718" stroke="#3B82F6" stroke-width="4" marker-end="url(#arch-arrow)"/>
+  <path d="M952 554V718" stroke="#3B82F6" stroke-width="4" marker-end="url(#arch-arrow)"/>
+  <path d="M584 554V718" stroke="#3B82F6" stroke-width="4" marker-end="url(#arch-arrow)"/>
+</svg>

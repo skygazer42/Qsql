@@ -1,4 +1,8 @@
-# QSQL
+ 
+
+<p align="center">
+  <img src="static/brand/qsql-logo-wordmark.png" alt="QSQL logo" width="760" />
+</p>
 
 QSQL 是一个面向业务数据问答的语义 SQL 服务。
 
@@ -34,6 +38,14 @@ QSQL 目前具备这几类能力：
 
 ## 核心运行时链路
 
+<p align="center">
+  <img
+    src="docs/assets/qsql-architecture-overview-zh.png"
+    alt="QSQL 架构总览图"
+    width="1100"
+  />
+</p>
+
 QSQL 的主链路是：
 
 - 问题进入服务
@@ -50,6 +62,72 @@ QSQL 的主链路是：
 - 程序负责控制 SQL
 - 语义目录负责承载业务结构
 - metadata 和 observability 负责支撑运维
+
+```mermaid
+flowchart TB
+  U["用户 / 业务系统"] --> API["API 层<br/>Flask app.py / server routes"]
+  API --> MAIN["数据问答主链路<br/>generate_sql / search / run_sql"]
+
+  subgraph Runtime["QSQL Runtime 核心链路"]
+    MAIN --> LOAD["加载 dataset_id"]
+    LOAD --> CATALOG["Semantic Catalog<br/>resources/semantic/*.json"]
+    LOAD --> META["Metadata Store<br/>SQLite"]
+
+    CATALOG --> RETR["混合检索<br/>Semantic / BM25 / Substring / n-gram"]
+    META --> RETR
+
+    RETR --> PARSE["pydantic-ai<br/>语义解析"]
+    PARSE --> VALIDATE["pydantic<br/>结构校验"]
+    VALIDATE --> BUILD["Controlled SQL Builder<br/>受控 SQL 构造"]
+    BUILD --> GUARD["Read-only Guard<br/>只读约束检查"]
+    GUARD --> DB[("业务数据库<br/>只读执行")]
+    DB --> RESP["结构化响应<br/>SQL / 表格 / CSV / Plotly"]
+  end
+
+  RESP --> API
+  API --> U
+
+  subgraph MetadataOps["Metadata / 语义运营"]
+    CONN["连接配置管理"] --> SYNC["Schema Sync<br/>表 / 字段 / 关系同步"]
+    SYNC --> META
+    MAP["Value Mapping 管理"] --> META
+    META --> DRAFT["Semantic Draft 生成"]
+    DRAFT --> CATALOG
+  end
+
+  API -.运维入口.-> CONN
+  API -.运维入口.-> MAP
+
+  subgraph Observability["可观测性"]
+    EVENT["Route Event<br/>结构化事件日志"]
+    TIMING["Stage Timing<br/>阶段耗时汇总"]
+  end
+
+  API -.写入.-> EVENT
+  RESP -.统计.-> TIMING
+
+  subgraph ModelLayer["模型服务"]
+    LLM["OpenAI-compatible LLM"]
+    EMB["OpenAI-compatible Embedding"]
+  end
+
+  PARSE --> LLM
+  RETR --> EMB
+
+  classDef entry fill:#eff6ff,stroke:#93c5fd,color:#0f172a,stroke-width:1.5px;
+  classDef semantic fill:#ecfeff,stroke:#5eead4,color:#0f172a,stroke-width:1.5px;
+  classDef runtime fill:#f8fafc,stroke:#cbd5e1,color:#0f172a,stroke-width:1.5px;
+  classDef guard fill:#fff7ed,stroke:#fdba74,color:#0f172a,stroke-width:1.5px;
+  classDef ops fill:#f5f3ff,stroke:#c4b5fd,color:#0f172a,stroke-width:1.5px;
+  classDef model fill:#eef2ff,stroke:#a5b4fc,color:#0f172a,stroke-width:1.5px;
+
+  class U,API,MAIN entry;
+  class CATALOG,PARSE semantic;
+  class LOAD,META,RETR,VALIDATE,BUILD,RESP,DB runtime;
+  class GUARD guard;
+  class CONN,SYNC,MAP,DRAFT,EVENT,TIMING ops;
+  class LLM,EMB model;
+```
 
 ## 当前边界
 
@@ -145,6 +223,8 @@ python app.py
 - [resources/semantic/README.md](/data/temp/qsql/resources/semantic/README.md:1)
 
 ## Metadata 能力
+
+![QSQL metadata operations flow](docs/assets/metadata-ops-flow.svg)
 
 QSQL 不要求你手工从零维护所有语义对象，它已经提供一套 metadata 辅助链路：
 

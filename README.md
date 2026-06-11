@@ -1,7 +1,7 @@
  
 
 <p align="center">
-  <img src="static/brand/qsql-logo-wordmark.png" alt="QSQL logo" width="760" />
+  <img src="static/brand/qsql-logo-wordmark.jpeg" alt="QSQL logo" width="560" />
 </p>
 
 QSQL 是一个面向业务数据问答的语义 SQL 服务。

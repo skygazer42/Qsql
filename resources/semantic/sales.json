@@ -1,0 +1,134 @@
+{
+  "catalog_version": "2026-06-11",
+  "dataset_id": "sales",
+  "tables": [
+    {
+      "key": "sales_order_wide",
+      "label": "销售订单宽表",
+      "physical_table": "sales_orders",
+      "description": "订单聚合分析统一宽表",
+      "default_time_dimension_key": "order_date"
+    }
+  ],
+  "metrics": [
+    {
+      "key": "order_amount",
+      "label": "订单金额",
+      "table_key": "sales_order_wide",
+      "field": "amount",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "city",
+        "order_date"
+      ],
+      "default_time_dimension_key": "order_date",
+      "allowed_version_keys": [
+        "won_only"
+      ]
+    },
+    {
+      "key": "order_count",
+      "label": "订单数量",
+      "table_key": "sales_order_wide",
+      "field": "id",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "city",
+        "order_date",
+        "industry"
+      ],
+      "default_time_dimension_key": "order_date",
+      "allowed_version_keys": [
+        "all_orders"
+      ]
+    }
+  ],
+  "dimensions": [
+    {
+      "key": "city",
+      "label": "城市",
+      "table_key": "sales_order_wide",
+      "field": "city_name",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "industry",
+      "label": "行业",
+      "table_key": "sales_order_wide",
+      "field": "industry_name",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "order_date",
+      "label": "下单日期",
+      "table_key": "sales_order_wide",
+      "field": "order_date",
+      "kind": "time",
+      "operators": [
+        "between",
+        "gte",
+        "lte"
+      ]
+    }
+  ],
+  "aliases": [
+    {
+      "alias": "成交金额",
+      "target_type": "metric",
+      "target_key": "order_amount"
+    },
+    {
+      "alias": "销售额",
+      "target_type": "metric",
+      "target_key": "order_amount"
+    },
+    {
+      "alias": "订单数",
+      "target_type": "metric",
+      "target_key": "order_count"
+    },
+    {
+      "alias": "城市",
+      "target_type": "dimension",
+      "target_key": "city"
+    },
+    {
+      "alias": "行业",
+      "target_type": "dimension",
+      "target_key": "industry"
+    }
+  ],
+  "metric_versions": [
+    {
+      "key": "won_only",
+      "label": "已赢单口径",
+      "metric_key": "order_amount",
+      "description": "只统计重点城市赢单后的订单金额",
+      "filters": [
+        {
+          "dimension_key": "city",
+          "operator": "in",
+          "value": [
+            "杭州",
+            "宁波"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "all_orders",
+      "label": "全部订单口径",
+      "metric_key": "order_count",
+      "description": "统计所有订单数量",
+      "filters": []
+    }
+  ]
+}

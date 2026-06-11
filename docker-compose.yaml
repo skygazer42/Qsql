@@ -1,0 +1,18 @@
+version: "3.10"
+services:
+  app:
+    image: kd-vanna:0.0.3
+    container_name: kd-vanna
+    environment:
+      TZ: "Asia/Shanghai"
+      LOG_LEVEL: "INFO"
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./resources:/app/resources
+    ports:
+      - "5005:5005"
+    restart: unless-stopped

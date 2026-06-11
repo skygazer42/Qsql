@@ -1,0 +1,25 @@
+#安装/注册 QEMU 支持
+# docker run --privileged --rm tonistiigi/binfmt --install all
+
+version: "3.10"
+services:
+  app:
+    image: kd-vanna:arm-0.0.3
+    container_name: kd-vanna
+    mem_limit: 8g
+    cpus: "8"
+    platform: linux/arm64
+    environment:
+      TZ: "Asia/Shanghai"
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./resources:/app/resources
+    ports:
+      - "5005:5005"
+    restart: unless-stopped
+
+

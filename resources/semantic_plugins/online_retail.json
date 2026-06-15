@@ -1,0 +1,48 @@
+{
+  "dataset_id": "online_retail",
+  "value_mappings": [
+    {
+      "dimension_key": "country",
+      "operator": "eq",
+      "terms": {
+        "英国": "United Kingdom",
+        "UK": "United Kingdom",
+        "德国": "Germany",
+        "法国": "France",
+        "荷兰": "Netherlands",
+        "爱尔兰": "EIRE",
+        "西班牙": "Spain",
+        "比利时": "Belgium",
+        "瑞士": "Switzerland",
+        "葡萄牙": "Portugal",
+        "澳大利亚": "Australia",
+        "挪威": "Norway",
+        "日本": "Japan",
+        "意大利": "Italy",
+        "芬兰": "Finland",
+        "塞浦路斯": "Cyprus",
+        "瑞典": "Sweden",
+        "奥地利": "Austria",
+        "丹麦": "Denmark",
+        "海峡群岛": "Channel Islands",
+        "未指定国家": "Unspecified"
+      }
+    },
+    {
+      "dimension_key": "product",
+      "operator": "eq",
+      "terms": {
+        "JUMBO BAG RED RETROSPOT": "JUMBO BAG RED RETROSPOT",
+        "WHITE HANGING HEART T-LIGHT HOLDER": "WHITE HANGING HEART T-LIGHT HOLDER",
+        "PAPER CRAFT LITTLE BIRDIE": "PAPER CRAFT , LITTLE BIRDIE",
+        "PAPER CRAFT , LITTLE BIRDIE": "PAPER CRAFT , LITTLE BIRDIE",
+        "RABBIT NIGHT LIGHT": "RABBIT NIGHT LIGHT",
+        "POPCORN HOLDER": "POPCORN HOLDER",
+        "MINI PAINT SET VINTAGE": "MINI PAINT SET VINTAGE",
+        "PARTY BUNTING": "PARTY BUNTING",
+        "WORLD WAR 2 GLIDERS ASSTD DESIGNS": "WORLD WAR 2 GLIDERS ASSTD DESIGNS",
+        "MEDIUM CERAMIC TOP STORAGE JAR": "MEDIUM CERAMIC TOP STORAGE JAR"
+      }
+    }
+  ]
+}

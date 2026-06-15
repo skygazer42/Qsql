@@ -8,6 +8,7 @@ from pathlib import Path
 from .schemas import SemanticParseResponse, SemanticQueryRequest, SemanticStageTimings
 from .semantic_agent import SemanticQueryAgent
 from .semantic_catalog import load_semantic_catalog
+from .semantic_postprocessor import SemanticPostprocessor
 from .sql_builder import build_query_execution_plan
 
 
@@ -20,11 +21,13 @@ class SemanticQueryService:
         parser=None,
         sql_builder=build_query_execution_plan,
         catalog_loader=load_semantic_catalog,
+        postprocessor: SemanticPostprocessor | None = None,
     ):
         self._semantic_base_dir = semantic_base_dir
         self._parser = parser
         self._sql_builder = sql_builder
         self._catalog_loader = catalog_loader
+        self._postprocessor = postprocessor or SemanticPostprocessor()
 
     @classmethod
     def from_model_config(
@@ -64,6 +67,11 @@ class SemanticQueryService:
         semantic_started_at = time.perf_counter()
         semantic_query = self._get_parser().parse(
             request_model.question, catalog, history=request_model.history
+        )
+        semantic_query = self._postprocessor.repair(
+            question=request_model.question,
+            catalog=catalog,
+            semantic_query=semantic_query,
         )
         semantic_agent_ms = int((time.perf_counter() - semantic_started_at) * 1000)
 

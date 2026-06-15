@@ -54,6 +54,7 @@ flowchart
 
 """
 
+import ast
 import hashlib
 import json
 import os
@@ -67,7 +68,6 @@ from urllib.parse import urlparse
 import pandas as pd
 import plotly
 import plotly.express as px
-import plotly.graph_objects as go
 import requests
 import sqlparse
 
@@ -92,6 +92,26 @@ from .runtime_helpers import train_impl
 
 #  QSQL 诊断日志：仓库已统一为直接导入风格，不再保留 try-import fallback。
 qsql_log = Log()
+
+# [CUSTOM] Plotly 代码只解释受限的 px.* 图表调用，禁止执行模型返回的任意 Python。
+_ALLOWED_PLOTLY_EXPRESS_FUNCTIONS = {
+    "area",
+    "bar",
+    "box",
+    "histogram",
+    "line",
+    "pie",
+    "scatter",
+    "strip",
+    "treemap",
+    "violin",
+}
+_ALLOWED_FIGURE_UPDATE_METHODS = {
+    "update_layout",
+    "update_traces",
+    "update_xaxes",
+    "update_yaxes",
+}
 
 
 def _qsql_hash(value) -> str:
@@ -169,6 +189,105 @@ def _qsql_find_exact_sql(question: str, examples: list) -> tuple[str | None, int
         if _qsql_norm(parsed_example.get("question")) == question_norm:
             return parsed_example.get("sql"), index
     return None, None
+
+
+def _qsql_default_plotly_figure(df: pd.DataFrame) -> plotly.graph_objs.Figure:
+    numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
+    categorical_cols = df.select_dtypes(
+        include=["object", "category", "string"]
+    ).columns.tolist()
+
+    if len(numeric_cols) >= 2:
+        return px.scatter(df, x=numeric_cols[0], y=numeric_cols[1])
+    if len(numeric_cols) == 1 and len(categorical_cols) >= 1:
+        return px.bar(df, x=categorical_cols[0], y=numeric_cols[0])
+    if len(categorical_cols) >= 1 and df[categorical_cols[0]].nunique() < 10:
+        return px.pie(df, names=categorical_cols[0])
+    return px.line(df)
+
+
+def _qsql_eval_plotly_literal(node: ast.AST, df: pd.DataFrame):
+    if isinstance(node, ast.Constant):
+        return node.value
+    if isinstance(node, ast.Name) and node.id == "df":
+        return df
+    if isinstance(node, ast.List):
+        return [_qsql_eval_plotly_literal(item, df) for item in node.elts]
+    if isinstance(node, ast.Tuple):
+        return tuple(_qsql_eval_plotly_literal(item, df) for item in node.elts)
+    if isinstance(node, ast.Dict):
+        return {
+            _qsql_eval_plotly_literal(key, df): _qsql_eval_plotly_literal(value, df)
+            for key, value in zip(node.keys, node.values)
+            if key is not None
+        }
+    raise ValueError("不支持的 Plotly 参数表达式")
+
+
+def _qsql_eval_plotly_px_call(
+    node: ast.Call, df: pd.DataFrame
+) -> plotly.graph_objs.Figure:
+    if not isinstance(node.func, ast.Attribute):
+        raise ValueError("Plotly 调用必须是属性调用")
+    if not isinstance(node.func.value, ast.Name) or node.func.value.id != "px":
+        raise ValueError("只允许 plotly.express 调用")
+    if node.func.attr not in _ALLOWED_PLOTLY_EXPRESS_FUNCTIONS:
+        raise ValueError(f"不支持的 Plotly 图表类型: {node.func.attr}")
+
+    args = [_qsql_eval_plotly_literal(arg, df) for arg in node.args]
+    kwargs = {
+        keyword.arg: _qsql_eval_plotly_literal(keyword.value, df)
+        for keyword in node.keywords
+        if keyword.arg is not None
+    }
+    return getattr(px, node.func.attr)(*args, **kwargs)
+
+
+def _qsql_apply_plotly_update(
+    fig: plotly.graph_objs.Figure, node: ast.Call
+) -> None:
+    if not isinstance(node.func, ast.Attribute):
+        raise ValueError("Plotly 更新必须是属性调用")
+    if not isinstance(node.func.value, ast.Name) or node.func.value.id != "fig":
+        raise ValueError("只允许更新 fig 对象")
+    if node.func.attr not in _ALLOWED_FIGURE_UPDATE_METHODS:
+        raise ValueError(f"不支持的 Plotly 更新方法: {node.func.attr}")
+
+    kwargs = {
+        keyword.arg: _qsql_eval_plotly_literal(keyword.value, pd.DataFrame())
+        for keyword in node.keywords
+        if keyword.arg is not None
+    }
+    getattr(fig, node.func.attr)(**kwargs)
+
+
+def _qsql_safe_plotly_figure(
+    plotly_code: str, df: pd.DataFrame
+) -> plotly.graph_objs.Figure | None:
+    module = ast.parse(plotly_code or "")
+    fig = None
+
+    for statement in module.body:
+        if isinstance(statement, ast.Assign):
+            if len(statement.targets) != 1:
+                raise ValueError("只允许单目标赋值")
+            target = statement.targets[0]
+            if not isinstance(target, ast.Name) or target.id != "fig":
+                raise ValueError("只允许给 fig 赋值")
+            if not isinstance(statement.value, ast.Call):
+                raise ValueError("fig 只能来自 plotly.express 调用")
+            fig = _qsql_eval_plotly_px_call(statement.value, df)
+            continue
+
+        if isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Call):
+            if fig is None:
+                raise ValueError("必须先创建 fig")
+            _qsql_apply_plotly_update(fig, statement.value)
+            continue
+
+        raise ValueError("不支持的 Plotly 语句")
+
+    return fig
 
 
 class VannaBase(ABC):
@@ -1362,31 +1481,15 @@ class VannaBase(ABC):
         Returns:
             plotly.graph_objs.Figure: The Plotly figure.
         """
-        ldict = {"df": df, "px": px, "go": go}
         try:
-            exec(plotly_code, globals(), ldict)
-
-            fig = ldict.get("fig", None)
-        except Exception:
-            # Inspect data types
-            numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
-            categorical_cols = df.select_dtypes(
-                include=["object", "category"]
-            ).columns.tolist()
-
-            # Decision-making for plot type
-            if len(numeric_cols) >= 2:
-                # Use the first two numeric columns for a scatter plot
-                fig = px.scatter(df, x=numeric_cols[0], y=numeric_cols[1])
-            elif len(numeric_cols) == 1 and len(categorical_cols) >= 1:
-                # Use a bar plot if there's one numeric and one categorical column
-                fig = px.bar(df, x=categorical_cols[0], y=numeric_cols[0])
-            elif len(categorical_cols) >= 1 and df[categorical_cols[0]].nunique() < 10:
-                # Use a pie chart for categorical data with fewer unique values
-                fig = px.pie(df, names=categorical_cols[0])
-            else:
-                # Default to a simple line plot if above conditions are not met
-                fig = px.line(df)
+            # [CUSTOM] 模型生成的 Plotly 代码只做受限 AST 解析，不执行任意 Python。
+            fig = _qsql_safe_plotly_figure(plotly_code, df)
+        except Exception as exc:
+            _qsql_log(
+                "warning",
+                f"[QSQL] Plotly代码安全解析失败，已降级自动图表 error={exc}",
+            )
+            fig = _qsql_default_plotly_figure(df)
 
         if fig is None:
             return None

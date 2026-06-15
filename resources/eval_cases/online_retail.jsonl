@@ -1,0 +1,30 @@
+{"id":"or_001","question":"2011年各国家有效销售额是多少？","expect_status":"ready","expect_metric_key":"revenue","expect_group_by":["country"]}
+{"id":"or_002","question":"2011年英国每月有效销售额趋势怎么样？","expect_status":"ready","expect_metric_key":"revenue","expect_group_by":["invoice_month"],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"United Kingdom"}]}
+{"id":"or_003","question":"2011年各国家有效订单数是多少？","expect_status":"ready","expect_metric_key":"invoice_count","expect_group_by":["country"]}
+{"id":"or_004","question":"2011年德国有效销量是多少？","expect_status":"ready","expect_metric_key":"quantity","expect_group_by":[],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"Germany"}]}
+{"id":"or_005","question":"2011年法国有效销售额是多少？","expect_status":"ready","expect_metric_key":"revenue","expect_group_by":[],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"France"}]}
+{"id":"or_006","question":"2011年荷兰有效订单数是多少？","expect_status":"ready","expect_metric_key":"invoice_count","expect_group_by":[],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"Netherlands"}]}
+{"id":"or_007","question":"2011年英国有效销售额是多少？","expect_status":"ready","expect_metric_key":"revenue","expect_group_by":[],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"United Kingdom"}]}
+{"id":"or_008","question":"2011年每月有效销售额是多少？","expect_status":"ready","expect_metric_key":"revenue","expect_group_by":["invoice_month"]}
+{"id":"or_009","question":"2011年各商品有效销量是多少？","expect_status":"ready","expect_metric_key":"quantity","expect_group_by":["product"]}
+{"id":"or_010","question":"2011年各商品有效销售额是多少？","expect_status":"ready","expect_metric_key":"revenue","expect_group_by":["product"]}
+{"id":"or_011","question":"2011年各国家销售数量是多少？","expect_status":"ready","expect_metric_key":"quantity","expect_group_by":["country"]}
+{"id":"or_012","question":"2011年各国家发票数是多少？","expect_status":"ready","expect_metric_key":"invoice_count","expect_group_by":["country"]}
+{"id":"or_013","question":"2011年西班牙有效销售额是多少？","expect_status":"ready","expect_metric_key":"revenue","expect_group_by":[],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"Spain"}]}
+{"id":"or_014","question":"2011年比利时有效销量是多少？","expect_status":"ready","expect_metric_key":"quantity","expect_group_by":[],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"Belgium"}]}
+{"id":"or_015","question":"2011年瑞士有效订单数是多少？","expect_status":"ready","expect_metric_key":"invoice_count","expect_group_by":[],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"Switzerland"}]}
+{"id":"or_016","question":"2011年葡萄牙每月有效销售额趋势？","expect_status":"ready","expect_metric_key":"revenue","expect_group_by":["invoice_month"],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"Portugal"}]}
+{"id":"or_017","question":"2011年澳大利亚每月有效销量趋势？","expect_status":"ready","expect_metric_key":"quantity","expect_group_by":["invoice_month"],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"Australia"}]}
+{"id":"or_018","question":"2011年挪威有效销售额是多少？","expect_status":"ready","expect_metric_key":"revenue","expect_group_by":[],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"Norway"}]}
+{"id":"or_019","question":"2011年日本有效销量是多少？","expect_status":"ready","expect_metric_key":"quantity","expect_group_by":[],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"Japan"}]}
+{"id":"or_020","question":"2011年英国各商品有效销售额是多少？","expect_status":"ready","expect_metric_key":"revenue","expect_group_by":["product"],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"United Kingdom"}]}
+{"id":"or_021","question":"2011年德国各商品有效销量是多少？","expect_status":"ready","expect_metric_key":"quantity","expect_group_by":["product"],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"Germany"}]}
+{"id":"or_022","question":"2011年法国每月有效订单数趋势？","expect_status":"ready","expect_metric_key":"invoice_count","expect_group_by":["invoice_month"],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"France"}]}
+{"id":"or_023","question":"各国家销售额是多少？","expect_status":"clarification"}
+{"id":"or_024","question":"英国销售额是多少？","expect_status":"clarification"}
+{"id":"or_025","question":"哪些商品卖得多？","expect_status":"clarification"}
+{"id":"or_026","question":"2011年有效总销售额是多少？","expect_status":"ready","expect_metric_key":"revenue","expect_group_by":[]}
+{"id":"or_027","question":"2011年有效总销量是多少？","expect_status":"ready","expect_metric_key":"quantity","expect_group_by":[]}
+{"id":"or_028","question":"2011年有效总订单数是多少？","expect_status":"ready","expect_metric_key":"invoice_count","expect_group_by":[]}
+{"id":"or_029","question":"2011年按月份看有效订单数趋势","expect_status":"ready","expect_metric_key":"invoice_count","expect_group_by":["invoice_month"]}
+{"id":"or_030","question":"2011年按国家看有效销售额排名","expect_status":"ready","expect_metric_key":"revenue","expect_group_by":["country"]}

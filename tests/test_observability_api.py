@@ -12,6 +12,7 @@ def _load_app_module(monkeypatch, tmp_path: Path):
     monkeypatch.setenv("EMBEDDING_MODEL", "test-embedding")
     monkeypatch.setenv("EMBEDDING_API_KEY", "EMPTY")
     monkeypatch.setenv("SECRET_ACCESS_KEY", "")
+    monkeypatch.setenv("QSQL_ALLOW_UNAUTHENTICATED", "true")
     monkeypatch.setenv("CHROMA_PATH", str(tmp_path / "db"))
     monkeypatch.setenv("QSQL_EVENT_LOG_DIR", str(tmp_path / "events"))
     sys.modules.pop("app", None)

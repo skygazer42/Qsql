@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -11,6 +11,6 @@ COPY . .
 RUN pip install ".[runtime]" \
     && rm -rf /root/.cache/pip
 
-EXPOSE 5000
+EXPOSE 5005
 
 CMD ["python", "app.py"]

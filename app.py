@@ -286,13 +286,31 @@ __metadata_sync_scheduler = start_metadata_sync_scheduler(store=get_metadata_sto
 
 # region 全局鉴权
 api_key = os.getenv("SECRET_ACCESS_KEY", "")
+# [CUSTOM] 默认收紧 API 访问；本地无鉴权调试必须显式声明，避免部署时静默裸奔。
+allow_unauthenticated = (
+    os.getenv("QSQL_ALLOW_UNAUTHENTICATED", "").strip().lower()
+    in {"1", "true", "yes", "on"}
+)
 
 
 @app.before_request
 def global_api_key_check():
     """全局请求前检查 API Key"""
     if not api_key:
-        return
+        if allow_unauthenticated:
+            return
+        return (
+            jsonify(
+                {
+                    "error": (
+                        "SECRET_ACCESS_KEY 未配置；如需本地无鉴权调试，请显式设置 "
+                        "QSQL_ALLOW_UNAUTHENTICATED=true"
+                    )
+                }
+            ),
+            503,
+        )
+
     # 优先检查自定义 Header
     key = request.headers.get("X-API-KEY")
     # 如果没有，再尝试解析 Bearer Token

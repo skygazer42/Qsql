@@ -1,10 +1,30 @@
-import pymysql.cursors
 import urllib.parse
+
 import pymysql
+import pymysql.cursors
+import sqlparse
 from flask import Blueprint, request, jsonify
 
 # 创建蓝图
 pymysql_bp = Blueprint("mysql", __name__, url_prefix="/api/v0/sql")
+
+
+# [CUSTOM] 直连 SQL 调试接口只允许单条只读查询，避免绕过主链路执行写操作。
+def is_read_only_query(query: str) -> bool:
+    """只允许单条 SELECT/WITH 查询进入直连 SQL 执行接口。"""
+    query = (query or "").strip()
+    if not query:
+        return False
+
+    statements = sqlparse.split(query)
+    if len(statements) != 1:
+        return False
+
+    parsed = sqlparse.parse(statements[0])
+    if not parsed:
+        return False
+
+    return parsed[0].get_type().upper() == "SELECT"
 
 
 def create_connection(payload):
@@ -42,6 +62,8 @@ def dry_run():
     sql_query = payload.get("query", "")
     if not sql_query:
         return jsonify({"error": "No SQL query provided"}), 400
+    if not is_read_only_query(sql_query):
+        return jsonify({"error": "Only single SELECT queries are allowed"}), 400
 
     connection = create_connection(payload)
     if connection is None:
@@ -64,6 +86,9 @@ def execute_query():
     sql_queries = payload.get("queries", "")
     if not sql_queries or not isinstance(sql_queries, list):
         return jsonify({"error": "No SQL queries provided or invalid format"}), 400
+    for query in sql_queries:
+        if not is_read_only_query(query):
+            return jsonify({"error": "Only single SELECT queries are allowed"}), 400
 
     connection = create_connection(payload)
     if connection is None:

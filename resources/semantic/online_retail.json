@@ -1,0 +1,230 @@
+{
+  "catalog_version": "2026-06-15",
+  "dataset_id": "online_retail",
+  "tables": [
+    {
+      "key": "online_retail_wide",
+      "label": "线上零售交易宽表",
+      "physical_table": "online_retail_orders",
+      "description": "UCI Online Retail 真实线上零售交易明细，按发票商品行粒度展开",
+      "default_time_dimension_key": "invoice_date"
+    }
+  ],
+  "metrics": [
+    {
+      "key": "revenue",
+      "label": "销售额",
+      "table_key": "online_retail_wide",
+      "field": "revenue",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "country",
+        "product",
+        "invoice_date",
+        "invoice_month"
+      ],
+      "default_time_dimension_key": "invoice_date",
+      "allowed_version_keys": [
+        "valid_revenue"
+      ],
+      "description": "按数量 * 单价计算的交易行金额"
+    },
+    {
+      "key": "quantity",
+      "label": "销售数量",
+      "table_key": "online_retail_wide",
+      "field": "quantity",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "country",
+        "product",
+        "invoice_date",
+        "invoice_month"
+      ],
+      "default_time_dimension_key": "invoice_date",
+      "allowed_version_keys": [
+        "valid_quantity"
+      ]
+    },
+    {
+      "key": "invoice_count",
+      "label": "发票数",
+      "table_key": "online_retail_wide",
+      "field": "invoice_no",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "country",
+        "product",
+        "invoice_date",
+        "invoice_month"
+      ],
+      "default_time_dimension_key": "invoice_date",
+      "allowed_version_keys": [
+        "valid_invoice_count"
+      ]
+    }
+  ],
+  "dimensions": [
+    {
+      "key": "country",
+      "label": "国家",
+      "table_key": "online_retail_wide",
+      "field": "country",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "product",
+      "label": "商品",
+      "table_key": "online_retail_wide",
+      "field": "description",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "invoice_date",
+      "label": "发票日期",
+      "table_key": "online_retail_wide",
+      "field": "invoice_date",
+      "kind": "time",
+      "operators": [
+        "between",
+        "gte",
+        "lte"
+      ]
+    },
+    {
+      "key": "invoice_month",
+      "label": "发票月份",
+      "table_key": "online_retail_wide",
+      "field": "invoice_month",
+      "kind": "time",
+      "operators": [
+        "between",
+        "gte",
+        "lte",
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "is_cancellation",
+      "label": "是否取消订单",
+      "table_key": "online_retail_wide",
+      "field": "is_cancellation",
+      "kind": "categorical",
+      "operators": [
+        "eq"
+      ]
+    }
+  ],
+  "aliases": [
+    {
+      "alias": "销售额",
+      "target_type": "metric",
+      "target_key": "revenue"
+    },
+    {
+      "alias": "营收",
+      "target_type": "metric",
+      "target_key": "revenue"
+    },
+    {
+      "alias": "销售数量",
+      "target_type": "metric",
+      "target_key": "quantity"
+    },
+    {
+      "alias": "销量",
+      "target_type": "metric",
+      "target_key": "quantity"
+    },
+    {
+      "alias": "发票数",
+      "target_type": "metric",
+      "target_key": "invoice_count"
+    },
+    {
+      "alias": "订单数",
+      "target_type": "metric",
+      "target_key": "invoice_count"
+    },
+    {
+      "alias": "国家",
+      "target_type": "dimension",
+      "target_key": "country"
+    },
+    {
+      "alias": "商品",
+      "target_type": "dimension",
+      "target_key": "product"
+    },
+    {
+      "alias": "月份",
+      "target_type": "dimension",
+      "target_key": "invoice_month"
+    },
+    {
+      "alias": "有效销售额",
+      "target_type": "metric_version",
+      "target_key": "valid_revenue"
+    },
+    {
+      "alias": "有效销量",
+      "target_type": "metric_version",
+      "target_key": "valid_quantity"
+    },
+    {
+      "alias": "有效订单数",
+      "target_type": "metric_version",
+      "target_key": "valid_invoice_count"
+    }
+  ],
+  "metric_versions": [
+    {
+      "key": "valid_revenue",
+      "label": "有效销售口径",
+      "metric_key": "revenue",
+      "description": "剔除发票号以 C 开头的取消交易",
+      "filters": [
+        {
+          "dimension_key": "is_cancellation",
+          "operator": "eq",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "valid_quantity",
+      "label": "有效销售口径",
+      "metric_key": "quantity",
+      "description": "剔除发票号以 C 开头的取消交易",
+      "filters": [
+        {
+          "dimension_key": "is_cancellation",
+          "operator": "eq",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "valid_invoice_count",
+      "label": "有效销售口径",
+      "metric_key": "invoice_count",
+      "description": "剔除发票号以 C 开头的取消交易",
+      "filters": [
+        {
+          "dimension_key": "is_cancellation",
+          "operator": "eq",
+          "value": 0
+        }
+      ]
+    }
+  ]
+}

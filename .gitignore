@@ -15,6 +15,7 @@ resources/metadata/
 resources/tasks/
 resources/tiktoken_cache/
 resources/uploads/
+resources/jieba/
 resources/knowledge_base_data/
 resources/bm25_cache/
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
+import json
 import re
 from typing import Any
 
@@ -297,6 +298,15 @@ def _field_ref(
     return f"{alias}.{safe_field}"
 
 
+def _filter_sort_key(filter_obj: SemanticFilter) -> str:
+    payload = {
+        "dimension_key": filter_obj.dimension_key,
+        "operator": filter_obj.operator,
+        "value": filter_obj.value,
+    }
+    return json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
+
+
 def build_query_execution_plan(
     catalog: SemanticCatalog, semantic_query: SemanticQueryDraft
 ) -> QueryExecutionPlan:
@@ -358,6 +368,7 @@ def build_query_execution_plan(
         semantic_filters = [*version.filters, *semantic_query.filters]
     else:
         semantic_filters = list(semantic_query.filters)
+    semantic_filters.sort(key=_filter_sort_key)
 
     resolved_filter_dimensions: list[SemanticDimensionDefinition] = []
     for filter_obj in semantic_filters:

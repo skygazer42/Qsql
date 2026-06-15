@@ -440,6 +440,24 @@ class SemanticPostprocessor:
     ) -> None:
         # [CUSTOM] plugin 只补当前 metric 可支持的维度，并优先用题面 alias 修正已有 filter 值。
         supported_dimension_keys = set(metric.supported_dimension_keys) if metric else set()
+        alias_targets: dict[str, set[str]] = {}
+        for mapping in plugin.get("value_mappings", []):
+            if not isinstance(mapping, dict):
+                continue
+            dimension_key = str(mapping.get("dimension_key", ""))
+            if dimension_key not in dimensions:
+                continue
+            if supported_dimension_keys and dimension_key not in supported_dimension_keys:
+                continue
+            terms = mapping.get("terms", {})
+            if not isinstance(terms, dict):
+                continue
+            for alias in terms:
+                alias_text = str(alias)
+                if not alias_text:
+                    continue
+                alias_targets.setdefault(alias_text, set()).add(dimension_key)
+
         for mapping in plugin.get("value_mappings", []):
             if not isinstance(mapping, dict):
                 continue
@@ -459,21 +477,30 @@ class SemanticPostprocessor:
             ]
             matched_aliases.sort(key=len, reverse=True)
             matched_value = terms[matched_aliases[0]] if matched_aliases else None
+            matched_candidate_dimensions = {
+                candidate_dimension
+                for alias in matched_aliases
+                for candidate_dimension in alias_targets.get(alias, {dimension_key})
+            }
+            can_infer_dimension_from_question = (
+                bool(matched_aliases)
+                and matched_candidate_dimensions == {dimension_key}
+            )
 
             for filter_obj in semantic_query.filters:
                 if filter_obj.dimension_key != dimension_key:
                     continue
-                if matched_value is not None:
-                    filter_obj.value = matched_value
-                    continue
                 filter_value = str(filter_obj.value)
                 if filter_value in terms:
                     filter_obj.value = terms[filter_value]
+                    continue
+                if matched_value is not None and can_infer_dimension_from_question:
+                    filter_obj.value = matched_value
 
             if self._has_filter(semantic_query, dimension_key):
                 continue
 
-            if matched_value is not None:
+            if matched_value is not None and can_infer_dimension_from_question:
                 semantic_query.filters.append(
                     SemanticFilter(
                         dimension_key=dimension_key,

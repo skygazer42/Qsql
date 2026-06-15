@@ -259,7 +259,7 @@
 
 ### 2026-06-15 BIRD 多表 harder 子集评测已落地
 
-- 已新增七套 BIRD Mini-Dev 多表 BI 子集语义目录、plugin、few-shot 示例与 EX 评测集：
+- 已新增八套 BIRD Mini-Dev 多表 BI 子集语义目录、plugin、few-shot 示例与 EX 评测集：
   - `bird_debit_card_specializing`
   - `bird_student_club`
   - `bird_financial`
@@ -267,11 +267,15 @@
   - `bird_codebase_community`
   - `bird_superhero`
   - `bird_california_schools`
+  - `bird_european_football_2`
 - 为接入 `bird_superhero`，底座补了两条通用能力：
   - 无默认时间维的 metric 不再被强制打回时间澄清
   - `group_by` 维度自动排除 `NULL` 桶，避免结果集多出无意义分组
 - 为接入 `bird_california_schools`，底座补了第三条通用能力：
   - SQL builder 现在支持带空格/括号的字段名与表名自动 quoting
+- 为接入 `bird_european_football_2`，底座补了两条通用能力：
+  - 共享 alias 的 plugin 映射不再盲目补到多个角色维度
+  - SQL builder 会对 filters 做确定序排序，保证相同语义的 SQL 输出稳定
 - 当前代码下的真实 SQLite EX 结果：
   - `bird_debit_card_specializing`：`12/12`，`repeat=3 -> 36/36`
   - `bird_student_club`：`12/12`，`repeat=3 -> 36/36`
@@ -280,8 +284,9 @@
 - `bird_codebase_community`：`12/12`，`repeat=3 -> 36/36`
 - `bird_superhero`：`12/12`，`repeat=3 -> 36/36`
 - `bird_california_schools`：`12/12`，`repeat=3 -> 36/36`
-- 七套 harder 子集合计：
-  - 单轮 `84/84 = 100%`
-  - `repeat=3` 累计 `252/252 = 100%`
+- `bird_european_football_2`：`12/12`，`repeat=3 -> 36/36`
+- 八套 harder 子集合计：
+  - 单轮 `96/96 = 100%`
+  - `repeat=3` 累计 `288/288 = 100%`
   - `stability_rate=1.0000`
 - 这组结果证明当前底座在**受控多表 BI 问数**场景下已经稳定，但**不能外推为 full BIRD / 开放域 arbitrary SQL 的整体准确率**。

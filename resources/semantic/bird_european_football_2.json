@@ -1,0 +1,301 @@
+{
+  "catalog_version": "2026-06-15",
+  "dataset_id": "bird_european_football_2",
+  "tables": [
+    {
+      "key": "match_fact",
+      "label": "比赛事实表",
+      "physical_table": "Match",
+      "description": "比赛结果与进球统计"
+    },
+    {
+      "key": "country_dim",
+      "label": "国家维表",
+      "physical_table": "Country",
+      "description": "比赛所属国家"
+    },
+    {
+      "key": "league_dim",
+      "label": "联赛维表",
+      "physical_table": "League",
+      "description": "比赛所属联赛"
+    },
+    {
+      "key": "home_team_dim",
+      "label": "主队维表",
+      "physical_table": "Team",
+      "description": "主队球队信息"
+    },
+    {
+      "key": "away_team_dim",
+      "label": "客队维表",
+      "physical_table": "Team",
+      "description": "客队球队信息"
+    }
+  ],
+  "entities": [
+    {
+      "key": "match_country_id",
+      "table_key": "match_fact",
+      "field": "country_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "country_id",
+      "table_key": "country_dim",
+      "field": "id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "match_league_id",
+      "table_key": "match_fact",
+      "field": "league_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "league_id",
+      "table_key": "league_dim",
+      "field": "id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "match_home_team_id",
+      "table_key": "match_fact",
+      "field": "home_team_api_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "home_team_api_id",
+      "table_key": "home_team_dim",
+      "field": "team_api_id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "match_away_team_id",
+      "table_key": "match_fact",
+      "field": "away_team_api_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "away_team_api_id",
+      "table_key": "away_team_dim",
+      "field": "team_api_id",
+      "entity_type": "primary"
+    }
+  ],
+  "relationships": [
+    {
+      "key": "match_to_country",
+      "left_entity_key": "match_country_id",
+      "right_entity_key": "country_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "match_to_league",
+      "left_entity_key": "match_league_id",
+      "right_entity_key": "league_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "match_to_home_team",
+      "left_entity_key": "match_home_team_id",
+      "right_entity_key": "home_team_api_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "match_to_away_team",
+      "left_entity_key": "match_away_team_id",
+      "right_entity_key": "away_team_api_id",
+      "join_type": "left",
+      "allowed": true
+    }
+  ],
+  "metrics": [
+    {
+      "key": "match_count",
+      "label": "比赛数",
+      "table_key": "match_fact",
+      "field": "id",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "country_name",
+        "league_name",
+        "season",
+        "stage",
+        "home_team_name",
+        "away_team_name"
+      ]
+    },
+    {
+      "key": "home_goals_sum",
+      "label": "主队进球总数",
+      "table_key": "match_fact",
+      "field": "home_team_goal",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "country_name",
+        "league_name",
+        "season",
+        "stage",
+        "home_team_name",
+        "away_team_name"
+      ]
+    },
+    {
+      "key": "away_goals_sum",
+      "label": "客队进球总数",
+      "table_key": "match_fact",
+      "field": "away_team_goal",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "country_name",
+        "league_name",
+        "season",
+        "stage",
+        "home_team_name",
+        "away_team_name"
+      ]
+    },
+    {
+      "key": "home_goals_avg",
+      "label": "主队场均进球",
+      "table_key": "match_fact",
+      "field": "home_team_goal",
+      "aggregation": "avg",
+      "supported_dimension_keys": [
+        "country_name",
+        "league_name",
+        "season",
+        "stage",
+        "home_team_name",
+        "away_team_name"
+      ]
+    },
+    {
+      "key": "away_goals_avg",
+      "label": "客队场均进球",
+      "table_key": "match_fact",
+      "field": "away_team_goal",
+      "aggregation": "avg",
+      "supported_dimension_keys": [
+        "country_name",
+        "league_name",
+        "season",
+        "stage",
+        "home_team_name",
+        "away_team_name"
+      ]
+    }
+  ],
+  "dimensions": [
+    {
+      "key": "country_name",
+      "label": "国家",
+      "table_key": "country_dim",
+      "field": "name",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "league_name",
+      "label": "联赛",
+      "table_key": "league_dim",
+      "field": "name",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "season",
+      "label": "赛季",
+      "table_key": "match_fact",
+      "field": "season",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "stage",
+      "label": "轮次",
+      "table_key": "match_fact",
+      "field": "stage",
+      "kind": "number",
+      "operators": ["eq", "in", "gte", "lte"]
+    },
+    {
+      "key": "home_team_name",
+      "label": "主队",
+      "table_key": "home_team_dim",
+      "field": "team_long_name",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "away_team_name",
+      "label": "客队",
+      "table_key": "away_team_dim",
+      "field": "team_long_name",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    }
+  ],
+  "aliases": [
+    {
+      "alias": "match count",
+      "target_type": "metric",
+      "target_key": "match_count"
+    },
+    {
+      "alias": "home goals",
+      "target_type": "metric",
+      "target_key": "home_goals_sum"
+    },
+    {
+      "alias": "away goals",
+      "target_type": "metric",
+      "target_key": "away_goals_sum"
+    },
+    {
+      "alias": "average home goals",
+      "target_type": "metric",
+      "target_key": "home_goals_avg"
+    },
+    {
+      "alias": "average away goals",
+      "target_type": "metric",
+      "target_key": "away_goals_avg"
+    },
+    {
+      "alias": "country",
+      "target_type": "dimension",
+      "target_key": "country_name"
+    },
+    {
+      "alias": "league",
+      "target_type": "dimension",
+      "target_key": "league_name"
+    },
+    {
+      "alias": "season",
+      "target_type": "dimension",
+      "target_key": "season"
+    },
+    {
+      "alias": "stage",
+      "target_type": "dimension",
+      "target_key": "stage"
+    },
+    {
+      "alias": "home team",
+      "target_type": "dimension",
+      "target_key": "home_team_name"
+    },
+    {
+      "alias": "away team",
+      "target_type": "dimension",
+      "target_key": "away_team_name"
+    }
+  ],
+  "metric_versions": []
+}

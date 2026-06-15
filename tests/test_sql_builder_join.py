@@ -264,3 +264,43 @@ def test_build_query_execution_plan_supports_quoted_field_identifiers(tmp_path: 
     assert 'SUM("Sales Amount") AS metric_value' in plan.sql
     assert '"School Type" AS school_type' in plan.sql
     assert '"School Type" = \'High School\'' in plan.sql
+
+
+def test_build_query_execution_plan_is_stable_when_filter_order_changes(tmp_path: Path):
+    semantic_dir = _write_join_catalog(tmp_path, include_relationships=True)
+    catalog = load_semantic_catalog("sales_join", base_dir=semantic_dir)
+
+    draft_a = SemanticQueryDraft(
+        analysis_type="group_by",
+        metric_key="order_amount",
+        group_by_dimension_keys=["customer_city"],
+        filters=[
+            {
+                "dimension_key": "customer_level",
+                "operator": "eq",
+                "value": "VIP",
+            },
+            {
+                "dimension_key": "customer_city",
+                "operator": "eq",
+                "value": "Shanghai",
+            },
+        ],
+        time_range=SemanticTimeRange(
+            dimension_key="order_date",
+            start="2026-01-01",
+            end="2026-01-31",
+        ),
+    )
+    draft_b = SemanticQueryDraft(
+        analysis_type="group_by",
+        metric_key="order_amount",
+        group_by_dimension_keys=["customer_city"],
+        filters=list(reversed(draft_a.filters)),
+        time_range=draft_a.time_range,
+    )
+
+    plan_a = build_query_execution_plan(catalog=catalog, semantic_query=draft_a)
+    plan_b = build_query_execution_plan(catalog=catalog, semantic_query=draft_b)
+
+    assert plan_a.sql == plan_b.sql

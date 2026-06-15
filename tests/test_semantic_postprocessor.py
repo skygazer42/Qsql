@@ -534,6 +534,247 @@ def test_postprocessor_normalizes_existing_filter_value_with_plugin(tmp_path: Pa
     ]
 
 
+def test_postprocessor_prefers_existing_filter_value_when_multiple_aliases_match(
+    tmp_path: Path,
+):
+    plugin_dir = tmp_path / "plugins"
+    plugin_dir.mkdir()
+    (plugin_dir / "football_dataset.json").write_text(
+        json.dumps(
+            {
+                "dataset_id": "football_dataset",
+                "value_mappings": [
+                    {
+                        "dimension_key": "home_team_name",
+                        "operator": "eq",
+                        "terms": {
+                            "Barcelona": "FC Barcelona",
+                            "Real Madrid": "Real Madrid CF",
+                        },
+                    },
+                    {
+                        "dimension_key": "away_team_name",
+                        "operator": "eq",
+                        "terms": {
+                            "Barcelona": "FC Barcelona",
+                            "Real Madrid": "Real Madrid CF",
+                        },
+                    },
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    catalog = ValidateRequest.parse(
+        SemanticCatalog,
+        {
+            "catalog_version": "2026-06-15",
+            "dataset_id": "football_dataset",
+            "tables": [
+                {
+                    "key": "match_fact",
+                    "label": "比赛事实表",
+                    "physical_table": "match_fact",
+                },
+                {
+                    "key": "home_team_dim",
+                    "label": "主队维表",
+                    "physical_table": "team",
+                },
+                {
+                    "key": "away_team_dim",
+                    "label": "客队维表",
+                    "physical_table": "team",
+                },
+            ],
+            "entities": [],
+            "relationships": [],
+            "metrics": [
+                {
+                    "key": "match_count",
+                    "label": "比赛数",
+                    "table_key": "match_fact",
+                    "field": "id",
+                    "aggregation": "count_distinct",
+                    "supported_dimension_keys": [
+                        "home_team_name",
+                        "away_team_name",
+                    ],
+                }
+            ],
+            "dimensions": [
+                {
+                    "key": "home_team_name",
+                    "label": "主队",
+                    "table_key": "home_team_dim",
+                    "field": "team_long_name",
+                    "kind": "categorical",
+                    "operators": ["eq"],
+                },
+                {
+                    "key": "away_team_name",
+                    "label": "客队",
+                    "table_key": "away_team_dim",
+                    "field": "team_long_name",
+                    "kind": "categorical",
+                    "operators": ["eq"],
+                },
+            ],
+            "aliases": [],
+            "metric_versions": [],
+        },
+    )
+    postprocessor = SemanticPostprocessor(plugin_base_dir=plugin_dir)
+    query = SemanticQueryDraft(
+        analysis_type="summary",
+        metric_key="match_count",
+        group_by_dimension_keys=[],
+        filters=[
+            SemanticFilter(
+                dimension_key="home_team_name",
+                operator="eq",
+                value="Barcelona",
+            ),
+            SemanticFilter(
+                dimension_key="away_team_name",
+                operator="eq",
+                value="Real Madrid",
+            ),
+        ],
+        time_range=None,
+    )
+
+    repaired = postprocessor.repair(
+        question="Show Barcelona home matches against Real Madrid.",
+        catalog=catalog,
+        semantic_query=query,
+    )
+
+    normalized_filters = {
+        filter_obj.dimension_key: filter_obj.value for filter_obj in repaired.filters
+    }
+    assert normalized_filters["home_team_name"] == "FC Barcelona"
+    assert normalized_filters["away_team_name"] == "Real Madrid CF"
+
+
+def test_postprocessor_does_not_auto_append_ambiguous_role_filter(tmp_path: Path):
+    plugin_dir = tmp_path / "plugins"
+    plugin_dir.mkdir()
+    (plugin_dir / "football_dataset.json").write_text(
+        json.dumps(
+            {
+                "dataset_id": "football_dataset",
+                "value_mappings": [
+                    {
+                        "dimension_key": "home_team_name",
+                        "operator": "eq",
+                        "terms": {
+                            "Barcelona": "FC Barcelona",
+                        },
+                    },
+                    {
+                        "dimension_key": "away_team_name",
+                        "operator": "eq",
+                        "terms": {
+                            "Barcelona": "FC Barcelona",
+                        },
+                    },
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    catalog = ValidateRequest.parse(
+        SemanticCatalog,
+        {
+            "catalog_version": "2026-06-15",
+            "dataset_id": "football_dataset",
+            "tables": [
+                {
+                    "key": "match_fact",
+                    "label": "比赛事实表",
+                    "physical_table": "match_fact",
+                },
+                {
+                    "key": "home_team_dim",
+                    "label": "主队维表",
+                    "physical_table": "team",
+                },
+                {
+                    "key": "away_team_dim",
+                    "label": "客队维表",
+                    "physical_table": "team",
+                },
+            ],
+            "entities": [],
+            "relationships": [],
+            "metrics": [
+                {
+                    "key": "match_count",
+                    "label": "比赛数",
+                    "table_key": "match_fact",
+                    "field": "id",
+                    "aggregation": "count_distinct",
+                    "supported_dimension_keys": [
+                        "home_team_name",
+                        "away_team_name",
+                    ],
+                }
+            ],
+            "dimensions": [
+                {
+                    "key": "home_team_name",
+                    "label": "主队",
+                    "table_key": "home_team_dim",
+                    "field": "team_long_name",
+                    "kind": "categorical",
+                    "operators": ["eq"],
+                },
+                {
+                    "key": "away_team_name",
+                    "label": "客队",
+                    "table_key": "away_team_dim",
+                    "field": "team_long_name",
+                    "kind": "categorical",
+                    "operators": ["eq"],
+                },
+            ],
+            "aliases": [],
+            "metric_versions": [],
+        },
+    )
+    postprocessor = SemanticPostprocessor(plugin_base_dir=plugin_dir)
+    query = SemanticQueryDraft(
+        analysis_type="summary",
+        metric_key="match_count",
+        group_by_dimension_keys=[],
+        filters=[
+            SemanticFilter(
+                dimension_key="home_team_name",
+                operator="eq",
+                value="Barcelona",
+            )
+        ],
+        time_range=None,
+    )
+
+    repaired = postprocessor.repair(
+        question="Show Barcelona home matches.",
+        catalog=catalog,
+        semantic_query=query,
+    )
+
+    assert repaired.filters == [
+        SemanticFilter(
+            dimension_key="home_team_name",
+            operator="eq",
+            value="FC Barcelona",
+        )
+    ]
+
+
 class _FakeValueRetriever:
     def retrieve(self, *, question, catalog, dimensions):
         return [

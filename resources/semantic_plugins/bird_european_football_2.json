@@ -1,0 +1,67 @@
+{
+  "dataset_id": "bird_european_football_2",
+  "value_mappings": [
+    {
+      "dimension_key": "country_name",
+      "operator": "eq",
+      "terms": {
+        "England": "England",
+        "england": "England",
+        "Spain": "Spain",
+        "spain": "Spain",
+        "Italy": "Italy",
+        "italy": "Italy"
+      }
+    },
+    {
+      "dimension_key": "league_name",
+      "operator": "eq",
+      "terms": {
+        "England Premier League": "England Premier League",
+        "england premier league": "England Premier League",
+        "Premier League": "England Premier League",
+        "premier league": "England Premier League",
+        "Spain LIGA BBVA": "Spain LIGA BBVA",
+        "spain liga bbva": "Spain LIGA BBVA",
+        "La Liga": "Spain LIGA BBVA",
+        "la liga": "Spain LIGA BBVA",
+        "Italy Serie A": "Italy Serie A",
+        "italy serie a": "Italy Serie A",
+        "Serie A": "Italy Serie A",
+        "serie a": "Italy Serie A"
+      }
+    },
+    {
+      "dimension_key": "home_team_name",
+      "operator": "eq",
+      "terms": {
+        "FC Barcelona": "FC Barcelona",
+        "fc barcelona": "FC Barcelona",
+        "Barcelona": "FC Barcelona",
+        "barcelona": "FC Barcelona",
+        "Real Madrid CF": "Real Madrid CF",
+        "real madrid cf": "Real Madrid CF",
+        "Real Madrid": "Real Madrid CF",
+        "real madrid": "Real Madrid CF",
+        "Manchester City": "Manchester City",
+        "manchester city": "Manchester City"
+      }
+    },
+    {
+      "dimension_key": "away_team_name",
+      "operator": "eq",
+      "terms": {
+        "FC Barcelona": "FC Barcelona",
+        "fc barcelona": "FC Barcelona",
+        "Barcelona": "FC Barcelona",
+        "barcelona": "FC Barcelona",
+        "Real Madrid CF": "Real Madrid CF",
+        "real madrid cf": "Real Madrid CF",
+        "Real Madrid": "Real Madrid CF",
+        "real madrid": "Real Madrid CF",
+        "Manchester City": "Manchester City",
+        "manchester city": "Manchester City"
+      }
+    }
+  ]
+}

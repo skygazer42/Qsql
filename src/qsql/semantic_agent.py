@@ -3,18 +3,29 @@
 from __future__ import annotations
 
 import httpx
-
-from .schemas import SemanticCatalog, SemanticQueryDraft, ValidateRequest
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel as OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
+
+from .schemas import SemanticCatalog, SemanticQueryDraft, ValidateRequest
+from .semantic_examples import FileSemanticExampleRetriever, format_semantic_examples
 
 
 class SemanticQueryAgent:
     """Parse natural language into a structured semantic query draft."""
 
-    def __init__(self, model_name: str, base_url: str, api_key: str, temperature: float):
+    def __init__(
+        self,
+        model_name: str,
+        base_url: str,
+        api_key: str,
+        temperature: float,
+        example_retriever=None,
+        example_top_k: int = 3,
+    ):
         self._temperature = temperature
+        self._example_retriever = example_retriever or FileSemanticExampleRetriever()
+        self._example_top_k = max(0, int(example_top_k))
         provider = OpenAIProvider(
             base_url=base_url,
             api_key=api_key or None,
@@ -94,6 +105,16 @@ class SemanticQueryAgent:
             draft = ValidateRequest.parse(SemanticQueryDraft, draft)
         return draft
 
+    def _examples_prompt(self, *, question: str, catalog: SemanticCatalog) -> str:
+        if self._example_retriever is None or self._example_top_k <= 0:
+            return "相似成功示例:\n无"
+        matches = self._example_retriever.retrieve(
+            dataset_id=catalog.dataset_id,
+            question=question,
+            top_k=self._example_top_k,
+        )
+        return format_semantic_examples(matches)
+
     def _run_prompt(self, prompt: str, *, temperature: float | None) -> SemanticQueryDraft:
         result = self._agent.run_sync(
             prompt,
@@ -113,9 +134,11 @@ class SemanticQueryAgent:
         sampling_temperature: float | None = None,
     ) -> list[SemanticQueryDraft]:
         history_text = "\n".join(history or []) or "无"
+        examples_text = self._examples_prompt(question=question, catalog=catalog)
         prompt = (
             f"{self._catalog_prompt(catalog)}\n\n"
             f"历史对话:\n{history_text}\n\n"
+            f"{examples_text}\n\n"
             f"用户问题:\n{question}"
         )
         total = max(1, int(candidate_count))

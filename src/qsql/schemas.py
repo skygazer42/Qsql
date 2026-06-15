@@ -449,6 +449,22 @@ class QueryParameter(ValidateRequest):
     value: Any
 
 
+class SemanticExample(ValidateRequest):
+    """可注入解析 prompt 的成功语义示例。"""
+
+    dataset_id: str = Field(min_length=1)
+    question: str = Field(min_length=1)
+    semantic_query: SemanticQueryDraft
+    note: Optional[str] = None
+
+
+class SemanticExampleMatch(ValidateRequest):
+    """语义示例检索命中结果。"""
+
+    example: SemanticExample
+    score: float = Field(ge=0.0)
+
+
 class QueryExecutionPlan(ValidateRequest):
     """后端受控生成的 SQL 执行计划。"""
 

@@ -1,6 +1,6 @@
 # 2026-06-15 Text2SQL 主流方案调研与 QSQL 集成路线图
 
-- 状态：实施中（P0-1 / P0-2 / P1-1 / P1-2 / P1-3 / P2-1 / P2-2 最小实现已落地）
+- 状态：路线图最小实现已落地（P0-1 / P0-2 / P1-1 / P1-2 / P1-3 / P2-1 / P2-2 / P2-3）
 - 范围：基于主流开源 text2sql 项目与 2024–2026 学术进展，规划可集成进 QSQL 或用于优化的方向。
 - 结论先行：**QSQL 当前的「语义层 + LLM 受控解析」路线与业界公认的可靠方向一致，不需要推翻；本路线图聚焦补齐已被验证的几块短板。**
 
@@ -41,7 +41,7 @@
 | P1-3 | 澄清升级：多选题 + 信息增益 | 已完成最小实现：结构化澄清候选项 | 契合 |
 | P2-1 | 相对时间解析（上季度 / 近 30 天） | 已完成最小实现：今年 / 本月 / 近 N 天 / 上季度 | 契合 |
 | P2-2 | 多指标查询 | 已完成最小实现：同表同粒度多指标 SELECT | 契合 |
-| P2-3 | few-shot 示例检索 | 已有 chromadb，可复用 | 契合 |
+| P2-3 | few-shot 示例检索 | 已完成最小实现：JSONL draft 示例检索并注入 prompt | 契合 |
 | 谨慎 | LLM 自由写 SQL / 开放 agent / RL 微调 | — | 与受控哲学冲突，暂不做 |
 
 ---
@@ -246,3 +246,11 @@
 - 跨语义表多指标会明确拒绝，不隐式放开多事实表 join。
 - `SemanticPostprocessor` 在 draft 已明确覆盖多个命中指标时不再转澄清。
 - 变更记录：`docs/change-records/2026-06-15-multi-metric-query-p2-2.md`
+
+### 2026-06-15 P2-3 已落地（最小实现）
+
+- 新增 `SemanticExample` / `SemanticExampleMatch`，用 Pydantic 承载 few-shot draft 示例。
+- 新增 `FileSemanticExampleRetriever`，从 `resources/semantic_examples/<dataset_id>.jsonl` 检索相似问题。
+- `SemanticQueryAgent` prompt 会注入相似成功示例，示例内容是 `SemanticQueryDraft`，不是 SQL。
+- 已补 `online_retail` 示例文件；后续可在同一 retriever 契约下替换为 Chroma/向量检索。
+- 变更记录：`docs/change-records/2026-06-15-semantic-few-shot-p2-3.md`

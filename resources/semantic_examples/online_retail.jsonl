@@ -1,0 +1,1 @@
+{"question":"2011年各国家有效销售额是多少？","semantic_query":{"analysis_type":"group_by","metric_key":"revenue","metric_keys":["revenue"],"group_by_dimension_keys":["country"],"filters":[],"time_range":{"dimension_key":"invoice_date","start":"2011-01-01","end":"2011-12-31"},"metric_version_key":"valid_revenue"},"note":"真实 online_retail 评测集中稳定通过的 group_by 示例"}

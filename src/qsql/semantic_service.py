@@ -186,12 +186,17 @@ class SemanticQueryService:
         question: str,
         catalog: SemanticCatalog,
     ) -> list[SemanticClarificationOption]:
-        # [CUSTOM] 多指标澄清只从 catalog 中已声明的指标和别名生成候选，不引入业务硬编码。
+        # [CUSTOM] 多指标澄清只认强指标词，避免 accounts/clients 这类实体名把问题误判成多指标。
         metric_terms = SemanticQueryService._metric_terms(catalog)
         matched_metric_keys = {
             metric_key
             for metric_key, terms in metric_terms.items()
-            if any(term and term in question for term in terms)
+            if any(
+                term
+                and term in question
+                and SemanticPostprocessor._is_strong_metric_term(term)
+                for term in terms
+            )
         }
         if len(matched_metric_keys) <= 1:
             return []

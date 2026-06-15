@@ -1,0 +1,470 @@
+{
+  "catalog_version": "2026-06-15",
+  "dataset_id": "bird_debit_card_specializing",
+  "tables": [
+    {
+      "key": "customers",
+      "label": "客户维表",
+      "physical_table": "customers",
+      "description": "客户主数据，包含分群和支付币种"
+    },
+    {
+      "key": "gasstations",
+      "label": "加油站维表",
+      "physical_table": "gasstations",
+      "description": "加油站主数据，包含国家、连锁和站点分群"
+    },
+    {
+      "key": "products",
+      "label": "商品维表",
+      "physical_table": "products",
+      "description": "油品与商品描述"
+    },
+    {
+      "key": "transactions_fact",
+      "label": "交易事实表",
+      "physical_table": "transactions_1k",
+      "description": "交易明细，按单笔交易粒度",
+      "default_time_dimension_key": "transaction_date"
+    },
+    {
+      "key": "yearmonth_fact",
+      "label": "客户月消费事实表",
+      "physical_table": "yearmonth",
+      "description": "客户按年月汇总的消费事实",
+      "default_time_dimension_key": "period_yyyymm"
+    }
+  ],
+  "entities": [
+    {
+      "key": "customers_customer_id",
+      "table_key": "customers",
+      "field": "CustomerID",
+      "entity_type": "primary"
+    },
+    {
+      "key": "gasstations_gasstation_id",
+      "table_key": "gasstations",
+      "field": "GasStationID",
+      "entity_type": "primary"
+    },
+    {
+      "key": "products_product_id",
+      "table_key": "products",
+      "field": "ProductID",
+      "entity_type": "primary"
+    },
+    {
+      "key": "transactions_fact_customer_id",
+      "table_key": "transactions_fact",
+      "field": "CustomerID",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "transactions_fact_gasstation_id",
+      "table_key": "transactions_fact",
+      "field": "GasStationID",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "transactions_fact_product_id",
+      "table_key": "transactions_fact",
+      "field": "ProductID",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "yearmonth_fact_customer_id",
+      "table_key": "yearmonth_fact",
+      "field": "CustomerID",
+      "entity_type": "foreign"
+    }
+  ],
+  "relationships": [
+    {
+      "key": "transactions_to_customers_customer_id",
+      "left_entity_key": "transactions_fact_customer_id",
+      "right_entity_key": "customers_customer_id",
+      "join_type": "left",
+      "allowed": true,
+      "description": "交易按客户关联客户维表"
+    },
+    {
+      "key": "transactions_to_gasstations_gasstation_id",
+      "left_entity_key": "transactions_fact_gasstation_id",
+      "right_entity_key": "gasstations_gasstation_id",
+      "join_type": "left",
+      "allowed": true,
+      "description": "交易按加油站关联站点维表"
+    },
+    {
+      "key": "transactions_to_products_product_id",
+      "left_entity_key": "transactions_fact_product_id",
+      "right_entity_key": "products_product_id",
+      "join_type": "left",
+      "allowed": true,
+      "description": "交易按商品关联商品维表"
+    },
+    {
+      "key": "yearmonth_to_customers_customer_id",
+      "left_entity_key": "yearmonth_fact_customer_id",
+      "right_entity_key": "customers_customer_id",
+      "join_type": "left",
+      "allowed": true,
+      "description": "月消费事实按客户关联客户维表"
+    }
+  ],
+  "metrics": [
+    {
+      "key": "consumption_total",
+      "label": "总消费",
+      "table_key": "yearmonth_fact",
+      "field": "Consumption",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "period_yyyymm",
+        "customer_id",
+        "customer_segment",
+        "customer_currency"
+      ],
+      "default_time_dimension_key": "period_yyyymm"
+    },
+    {
+      "key": "customer_count",
+      "label": "客户数",
+      "table_key": "yearmonth_fact",
+      "field": "CustomerID",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "period_yyyymm",
+        "customer_segment",
+        "customer_currency"
+      ],
+      "default_time_dimension_key": "period_yyyymm"
+    },
+    {
+      "key": "transaction_count",
+      "label": "交易数",
+      "table_key": "transactions_fact",
+      "field": "TransactionID",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "transaction_date",
+        "transaction_time",
+        "customer_id",
+        "customer_segment",
+        "customer_currency",
+        "gasstation_country",
+        "gasstation_segment",
+        "gasstation_chain_id",
+        "product_id",
+        "product_description"
+      ],
+      "default_time_dimension_key": "transaction_date"
+    },
+    {
+      "key": "spend_total",
+      "label": "总花费",
+      "table_key": "transactions_fact",
+      "field": "Price",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "transaction_date",
+        "transaction_time",
+        "customer_id",
+        "customer_segment",
+        "customer_currency",
+        "gasstation_country",
+        "gasstation_segment",
+        "gasstation_chain_id",
+        "product_id",
+        "product_description"
+      ],
+      "default_time_dimension_key": "transaction_date"
+    },
+    {
+      "key": "amount_total",
+      "label": "总数量",
+      "table_key": "transactions_fact",
+      "field": "Amount",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "transaction_date",
+        "transaction_time",
+        "customer_id",
+        "customer_segment",
+        "customer_currency",
+        "gasstation_country",
+        "gasstation_segment",
+        "gasstation_chain_id",
+        "product_id",
+        "product_description"
+      ],
+      "default_time_dimension_key": "transaction_date"
+    }
+  ],
+  "dimensions": [
+    {
+      "key": "customer_id",
+      "label": "客户ID",
+      "table_key": "customers",
+      "field": "CustomerID",
+      "kind": "number",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "customer_segment",
+      "label": "客户分群",
+      "table_key": "customers",
+      "field": "Segment",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "customer_currency",
+      "label": "支付币种",
+      "table_key": "customers",
+      "field": "Currency",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "period_yyyymm",
+      "label": "年月",
+      "table_key": "yearmonth_fact",
+      "field": "Date",
+      "kind": "time",
+      "operators": [
+        "between",
+        "gte",
+        "lte",
+        "eq",
+        "in"
+      ],
+      "time_format": "yyyymm"
+    },
+    {
+      "key": "transaction_date",
+      "label": "交易日期",
+      "table_key": "transactions_fact",
+      "field": "Date",
+      "kind": "time",
+      "operators": [
+        "between",
+        "gte",
+        "lte",
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "transaction_time",
+      "label": "交易时间",
+      "table_key": "transactions_fact",
+      "field": "Time",
+      "kind": "time",
+      "operators": [
+        "between",
+        "gte",
+        "lte",
+        "eq"
+      ]
+    },
+    {
+      "key": "gasstation_country",
+      "label": "加油站国家",
+      "table_key": "gasstations",
+      "field": "Country",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "gasstation_segment",
+      "label": "加油站分群",
+      "table_key": "gasstations",
+      "field": "Segment",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "gasstation_chain_id",
+      "label": "加油站连锁ID",
+      "table_key": "gasstations",
+      "field": "ChainID",
+      "kind": "number",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "product_id",
+      "label": "商品ID",
+      "table_key": "products",
+      "field": "ProductID",
+      "kind": "number",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "product_description",
+      "label": "商品描述",
+      "table_key": "products",
+      "field": "Description",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    }
+  ],
+  "aliases": [
+    {
+      "alias": "consumption",
+      "target_type": "metric",
+      "target_key": "consumption_total"
+    },
+    {
+      "alias": "gas consumption",
+      "target_type": "metric",
+      "target_key": "consumption_total"
+    },
+    {
+      "alias": "total consumption",
+      "target_type": "metric",
+      "target_key": "consumption_total"
+    },
+    {
+      "alias": "customer count",
+      "target_type": "metric",
+      "target_key": "customer_count"
+    },
+    {
+      "alias": "distinct customers",
+      "target_type": "metric",
+      "target_key": "customer_count"
+    },
+    {
+      "alias": "transactions",
+      "target_type": "metric",
+      "target_key": "transaction_count"
+    },
+    {
+      "alias": "transaction count",
+      "target_type": "metric",
+      "target_key": "transaction_count"
+    },
+    {
+      "alias": "number of transactions",
+      "target_type": "metric",
+      "target_key": "transaction_count"
+    },
+    {
+      "alias": "spend",
+      "target_type": "metric",
+      "target_key": "spend_total"
+    },
+    {
+      "alias": "total spend",
+      "target_type": "metric",
+      "target_key": "spend_total"
+    },
+    {
+      "alias": "spent amount",
+      "target_type": "metric",
+      "target_key": "spend_total"
+    },
+    {
+      "alias": "amount",
+      "target_type": "metric",
+      "target_key": "amount_total"
+    },
+    {
+      "alias": "units sold",
+      "target_type": "metric",
+      "target_key": "amount_total"
+    },
+    {
+      "alias": "customer segment",
+      "target_type": "dimension",
+      "target_key": "customer_segment"
+    },
+    {
+      "alias": "segment",
+      "target_type": "dimension",
+      "target_key": "customer_segment"
+    },
+    {
+      "alias": "currency",
+      "target_type": "dimension",
+      "target_key": "customer_currency"
+    },
+    {
+      "alias": "month",
+      "target_type": "dimension",
+      "target_key": "period_yyyymm"
+    },
+    {
+      "alias": "yearmonth",
+      "target_type": "dimension",
+      "target_key": "period_yyyymm"
+    },
+    {
+      "alias": "transaction date",
+      "target_type": "dimension",
+      "target_key": "transaction_date"
+    },
+    {
+      "alias": "transaction time",
+      "target_type": "dimension",
+      "target_key": "transaction_time"
+    },
+    {
+      "alias": "country",
+      "target_type": "dimension",
+      "target_key": "gasstation_country"
+    },
+    {
+      "alias": "gas station country",
+      "target_type": "dimension",
+      "target_key": "gasstation_country"
+    },
+    {
+      "alias": "chain",
+      "target_type": "dimension",
+      "target_key": "gasstation_chain_id"
+    },
+    {
+      "alias": "chain id",
+      "target_type": "dimension",
+      "target_key": "gasstation_chain_id"
+    },
+    {
+      "alias": "product",
+      "target_type": "dimension",
+      "target_key": "product_description"
+    },
+    {
+      "alias": "product description",
+      "target_type": "dimension",
+      "target_key": "product_description"
+    }
+  ],
+  "metric_versions": []
+}

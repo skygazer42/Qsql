@@ -1,0 +1,619 @@
+{
+  "catalog_version": "2026-06-15",
+  "dataset_id": "bird_financial",
+  "tables": [
+    {
+      "key": "client",
+      "label": "客户维表",
+      "physical_table": "client",
+      "description": "客户基础信息",
+      "default_time_dimension_key": "client_birth_date"
+    },
+    {
+      "key": "client_district",
+      "label": "客户地区维表",
+      "physical_table": "district",
+      "description": "客户所属地区信息"
+    },
+    {
+      "key": "account",
+      "label": "账户维表",
+      "physical_table": "account",
+      "description": "账户开户信息",
+      "default_time_dimension_key": "account_open_date"
+    },
+    {
+      "key": "account_district",
+      "label": "账户地区维表",
+      "physical_table": "district",
+      "description": "账户所属地区信息"
+    },
+    {
+      "key": "disp_bridge",
+      "label": "账户客户关系桥表",
+      "physical_table": "disp",
+      "description": "客户和账户的角色关系"
+    },
+    {
+      "key": "loan_fact",
+      "label": "贷款事实表",
+      "physical_table": "loan",
+      "description": "贷款申请与状态事实",
+      "default_time_dimension_key": "loan_date"
+    },
+    {
+      "key": "trans_fact",
+      "label": "交易事实表",
+      "physical_table": "trans",
+      "description": "账户交易明细",
+      "default_time_dimension_key": "trans_date"
+    },
+    {
+      "key": "card_fact",
+      "label": "银行卡事实表",
+      "physical_table": "card",
+      "description": "银行卡发行记录",
+      "default_time_dimension_key": "card_issued"
+    }
+  ],
+  "entities": [
+    {
+      "key": "client_client_id",
+      "table_key": "client",
+      "field": "client_id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "client_district_district_id",
+      "table_key": "client_district",
+      "field": "district_id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "account_account_id",
+      "table_key": "account",
+      "field": "account_id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "account_district_district_id",
+      "table_key": "account_district",
+      "field": "district_id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "disp_bridge_disp_id",
+      "table_key": "disp_bridge",
+      "field": "disp_id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "client_district_id",
+      "table_key": "client",
+      "field": "district_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "account_district_id",
+      "table_key": "account",
+      "field": "district_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "disp_bridge_client_id",
+      "table_key": "disp_bridge",
+      "field": "client_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "disp_bridge_account_id",
+      "table_key": "disp_bridge",
+      "field": "account_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "loan_fact_account_id",
+      "table_key": "loan_fact",
+      "field": "account_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "trans_fact_account_id",
+      "table_key": "trans_fact",
+      "field": "account_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "card_fact_disp_id",
+      "table_key": "card_fact",
+      "field": "disp_id",
+      "entity_type": "foreign"
+    }
+  ],
+  "relationships": [
+    {
+      "key": "client_to_client_district",
+      "left_entity_key": "client_district_id",
+      "right_entity_key": "client_district_district_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "account_to_account_district",
+      "left_entity_key": "account_district_id",
+      "right_entity_key": "account_district_district_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "disp_to_client",
+      "left_entity_key": "disp_bridge_client_id",
+      "right_entity_key": "client_client_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "disp_to_account",
+      "left_entity_key": "disp_bridge_account_id",
+      "right_entity_key": "account_account_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "loan_to_account",
+      "left_entity_key": "loan_fact_account_id",
+      "right_entity_key": "account_account_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "trans_to_account",
+      "left_entity_key": "trans_fact_account_id",
+      "right_entity_key": "account_account_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "card_to_disp",
+      "left_entity_key": "card_fact_disp_id",
+      "right_entity_key": "disp_bridge_disp_id",
+      "join_type": "left",
+      "allowed": true
+    }
+  ],
+  "metrics": [
+    {
+      "key": "client_count",
+      "label": "客户数",
+      "table_key": "client",
+      "field": "client_id",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "client_gender",
+        "client_birth_date",
+        "client_region",
+        "client_district_name"
+      ],
+      "default_time_dimension_key": "client_birth_date"
+    },
+    {
+      "key": "account_count",
+      "label": "账户数",
+      "table_key": "account",
+      "field": "account_id",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "account_open_date",
+        "account_frequency",
+        "account_region",
+        "account_district_name"
+      ],
+      "default_time_dimension_key": "account_open_date"
+    },
+    {
+      "key": "loan_amount_total",
+      "label": "贷款金额合计",
+      "table_key": "loan_fact",
+      "field": "amount",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "loan_date",
+        "loan_status",
+        "loan_duration",
+        "account_frequency",
+        "account_region",
+        "account_district_name",
+        "account_open_date"
+      ],
+      "default_time_dimension_key": "loan_date"
+    },
+    {
+      "key": "loan_count",
+      "label": "贷款笔数",
+      "table_key": "loan_fact",
+      "field": "loan_id",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "loan_date",
+        "loan_status",
+        "loan_duration",
+        "account_frequency",
+        "account_region",
+        "account_district_name",
+        "account_open_date"
+      ],
+      "default_time_dimension_key": "loan_date"
+    },
+    {
+      "key": "trans_amount_total",
+      "label": "交易金额合计",
+      "table_key": "trans_fact",
+      "field": "amount",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "trans_date",
+        "trans_type",
+        "trans_operation",
+        "trans_k_symbol",
+        "account_frequency",
+        "account_region",
+        "account_district_name"
+      ],
+      "default_time_dimension_key": "trans_date"
+    },
+    {
+      "key": "trans_count",
+      "label": "交易笔数",
+      "table_key": "trans_fact",
+      "field": "trans_id",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "trans_date",
+        "trans_type",
+        "trans_operation",
+        "trans_k_symbol",
+        "account_frequency",
+        "account_region",
+        "account_district_name"
+      ],
+      "default_time_dimension_key": "trans_date"
+    },
+    {
+      "key": "card_count",
+      "label": "银行卡数",
+      "table_key": "card_fact",
+      "field": "card_id",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "card_issued",
+        "card_type",
+        "disp_type",
+        "client_gender",
+        "client_region",
+        "client_district_name"
+      ],
+      "default_time_dimension_key": "card_issued"
+    }
+  ],
+  "dimensions": [
+    {
+      "key": "client_gender",
+      "label": "客户性别",
+      "table_key": "client",
+      "field": "gender",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "client_birth_date",
+      "label": "出生日期",
+      "table_key": "client",
+      "field": "birth_date",
+      "kind": "time",
+      "operators": [
+        "between",
+        "gte",
+        "lte"
+      ]
+    },
+    {
+      "key": "client_region",
+      "label": "客户区域",
+      "table_key": "client_district",
+      "field": "A3",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "client_district_name",
+      "label": "客户地区名",
+      "table_key": "client_district",
+      "field": "A2",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "account_open_date",
+      "label": "开户日期",
+      "table_key": "account",
+      "field": "date",
+      "kind": "time",
+      "operators": [
+        "between",
+        "gte",
+        "lte"
+      ]
+    },
+    {
+      "key": "account_frequency",
+      "label": "账单频率",
+      "table_key": "account",
+      "field": "frequency",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "account_region",
+      "label": "账户区域",
+      "table_key": "account_district",
+      "field": "A3",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "account_district_name",
+      "label": "账户地区名",
+      "table_key": "account_district",
+      "field": "A2",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "loan_date",
+      "label": "贷款日期",
+      "table_key": "loan_fact",
+      "field": "date",
+      "kind": "time",
+      "operators": [
+        "between",
+        "gte",
+        "lte"
+      ]
+    },
+    {
+      "key": "loan_status",
+      "label": "贷款状态",
+      "table_key": "loan_fact",
+      "field": "status",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "loan_duration",
+      "label": "贷款期限",
+      "table_key": "loan_fact",
+      "field": "duration",
+      "kind": "number",
+      "operators": [
+        "eq",
+        "in",
+        "gte",
+        "lte",
+        "between"
+      ]
+    },
+    {
+      "key": "trans_date",
+      "label": "交易日期",
+      "table_key": "trans_fact",
+      "field": "date",
+      "kind": "time",
+      "operators": [
+        "between",
+        "gte",
+        "lte"
+      ]
+    },
+    {
+      "key": "trans_type",
+      "label": "交易类型",
+      "table_key": "trans_fact",
+      "field": "type",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "trans_operation",
+      "label": "交易操作",
+      "table_key": "trans_fact",
+      "field": "operation",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "trans_k_symbol",
+      "label": "交易符号",
+      "table_key": "trans_fact",
+      "field": "k_symbol",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "card_issued",
+      "label": "发卡日期",
+      "table_key": "card_fact",
+      "field": "issued",
+      "kind": "time",
+      "operators": [
+        "between",
+        "gte",
+        "lte"
+      ]
+    },
+    {
+      "key": "card_type",
+      "label": "卡类型",
+      "table_key": "card_fact",
+      "field": "type",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "disp_type",
+      "label": "持卡关系类型",
+      "table_key": "disp_bridge",
+      "field": "type",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    }
+  ],
+  "aliases": [
+    {
+      "alias": "client count",
+      "target_type": "metric",
+      "target_key": "client_count"
+    },
+    {
+      "alias": "clients",
+      "target_type": "metric",
+      "target_key": "client_count"
+    },
+    {
+      "alias": "account count",
+      "target_type": "metric",
+      "target_key": "account_count"
+    },
+    {
+      "alias": "accounts",
+      "target_type": "metric",
+      "target_key": "account_count"
+    },
+    {
+      "alias": "loan amount",
+      "target_type": "metric",
+      "target_key": "loan_amount_total"
+    },
+    {
+      "alias": "total loan amount",
+      "target_type": "metric",
+      "target_key": "loan_amount_total"
+    },
+    {
+      "alias": "loan count",
+      "target_type": "metric",
+      "target_key": "loan_count"
+    },
+    {
+      "alias": "transaction amount",
+      "target_type": "metric",
+      "target_key": "trans_amount_total"
+    },
+    {
+      "alias": "total transaction amount",
+      "target_type": "metric",
+      "target_key": "trans_amount_total"
+    },
+    {
+      "alias": "transaction count",
+      "target_type": "metric",
+      "target_key": "trans_count"
+    },
+    {
+      "alias": "card count",
+      "target_type": "metric",
+      "target_key": "card_count"
+    },
+    {
+      "alias": "gender",
+      "target_type": "dimension",
+      "target_key": "client_gender"
+    },
+    {
+      "alias": "client region",
+      "target_type": "dimension",
+      "target_key": "client_region"
+    },
+    {
+      "alias": "client district",
+      "target_type": "dimension",
+      "target_key": "client_district_name"
+    },
+    {
+      "alias": "account region",
+      "target_type": "dimension",
+      "target_key": "account_region"
+    },
+    {
+      "alias": "account district",
+      "target_type": "dimension",
+      "target_key": "account_district_name"
+    },
+    {
+      "alias": "frequency",
+      "target_type": "dimension",
+      "target_key": "account_frequency"
+    },
+    {
+      "alias": "loan status",
+      "target_type": "dimension",
+      "target_key": "loan_status"
+    },
+    {
+      "alias": "transaction type",
+      "target_type": "dimension",
+      "target_key": "trans_type"
+    },
+    {
+      "alias": "transaction operation",
+      "target_type": "dimension",
+      "target_key": "trans_operation"
+    },
+    {
+      "alias": "card type",
+      "target_type": "dimension",
+      "target_key": "card_type"
+    },
+    {
+      "alias": "disp type",
+      "target_type": "dimension",
+      "target_key": "disp_type"
+    }
+  ],
+  "metric_versions": []
+}

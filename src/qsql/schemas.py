@@ -226,6 +226,7 @@ class SemanticDimensionDefinition(ValidateRequest):
     field: str = Field(min_length=1)
     kind: str = Field(default="categorical", min_length=1)
     operators: list[str] = Field(default_factory=list)
+    time_format: Optional[str] = None
 
 
 class SemanticTableDefinition(ValidateRequest):

@@ -1,0 +1,775 @@
+{
+  "catalog_version": "2026-06-15",
+  "dataset_id": "bird_student_club",
+  "tables": [
+    {
+      "key": "major",
+      "label": "专业维表",
+      "physical_table": "major",
+      "description": "学生专业、院系和学院信息"
+    },
+    {
+      "key": "zip_code",
+      "label": "邮编维表",
+      "physical_table": "zip_code",
+      "description": "邮编对应城市、县和州信息"
+    },
+    {
+      "key": "member",
+      "label": "成员维表",
+      "physical_table": "member",
+      "description": "社团成员基础信息"
+    },
+    {
+      "key": "event",
+      "label": "活动维表",
+      "physical_table": "event",
+      "description": "活动主数据，包含时间、类型、地点和状态"
+    },
+    {
+      "key": "budget_fact",
+      "label": "预算事实表",
+      "physical_table": "budget",
+      "description": "活动预算与花费事实"
+    },
+    {
+      "key": "expense_fact",
+      "label": "报销事实表",
+      "physical_table": "expense",
+      "description": "成员报销与费用明细",
+      "default_time_dimension_key": "expense_date"
+    },
+    {
+      "key": "income_fact",
+      "label": "收入事实表",
+      "physical_table": "income",
+      "description": "成员缴费和筹款收入明细",
+      "default_time_dimension_key": "income_date"
+    },
+    {
+      "key": "attendance_fact",
+      "label": "出勤事实表",
+      "physical_table": "attendance",
+      "description": "成员参与活动的出勤明细"
+    }
+  ],
+  "entities": [
+    {
+      "key": "major_major_id",
+      "table_key": "major",
+      "field": "major_id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "zip_code_zip_code",
+      "table_key": "zip_code",
+      "field": "zip_code",
+      "entity_type": "primary"
+    },
+    {
+      "key": "member_member_id",
+      "table_key": "member",
+      "field": "member_id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "event_event_id",
+      "table_key": "event",
+      "field": "event_id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "budget_fact_budget_id",
+      "table_key": "budget_fact",
+      "field": "budget_id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "member_link_to_major",
+      "table_key": "member",
+      "field": "link_to_major",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "member_zip",
+      "table_key": "member",
+      "field": "zip",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "budget_fact_link_to_event",
+      "table_key": "budget_fact",
+      "field": "link_to_event",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "expense_fact_link_to_member",
+      "table_key": "expense_fact",
+      "field": "link_to_member",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "expense_fact_link_to_budget",
+      "table_key": "expense_fact",
+      "field": "link_to_budget",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "income_fact_link_to_member",
+      "table_key": "income_fact",
+      "field": "link_to_member",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "attendance_fact_link_to_event",
+      "table_key": "attendance_fact",
+      "field": "link_to_event",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "attendance_fact_link_to_member",
+      "table_key": "attendance_fact",
+      "field": "link_to_member",
+      "entity_type": "foreign"
+    }
+  ],
+  "relationships": [
+    {
+      "key": "member_to_major",
+      "left_entity_key": "member_link_to_major",
+      "right_entity_key": "major_major_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "member_to_zip_code",
+      "left_entity_key": "member_zip",
+      "right_entity_key": "zip_code_zip_code",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "budget_to_event",
+      "left_entity_key": "budget_fact_link_to_event",
+      "right_entity_key": "event_event_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "expense_to_member",
+      "left_entity_key": "expense_fact_link_to_member",
+      "right_entity_key": "member_member_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "expense_to_budget",
+      "left_entity_key": "expense_fact_link_to_budget",
+      "right_entity_key": "budget_fact_budget_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "income_to_member",
+      "left_entity_key": "income_fact_link_to_member",
+      "right_entity_key": "member_member_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "attendance_to_event",
+      "left_entity_key": "attendance_fact_link_to_event",
+      "right_entity_key": "event_event_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "attendance_to_member",
+      "left_entity_key": "attendance_fact_link_to_member",
+      "right_entity_key": "member_member_id",
+      "join_type": "left",
+      "allowed": true
+    }
+  ],
+  "metrics": [
+    {
+      "key": "member_count",
+      "label": "成员数",
+      "table_key": "member",
+      "field": "member_id",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "member_first_name",
+        "member_last_name",
+        "member_position",
+        "t_shirt_size",
+        "major_name",
+        "major_department",
+        "major_college",
+        "home_city",
+        "home_state"
+      ]
+    },
+    {
+      "key": "attendance_count",
+      "label": "出勤人数",
+      "table_key": "attendance_fact",
+      "field": "link_to_member",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "event_name",
+        "event_date",
+        "event_type",
+        "event_location",
+        "event_status",
+        "member_first_name",
+        "member_last_name",
+        "member_position",
+        "t_shirt_size",
+        "major_name",
+        "major_department",
+        "home_state"
+      ],
+      "default_time_dimension_key": "event_date"
+    },
+    {
+      "key": "budget_amount_total",
+      "label": "预算金额合计",
+      "table_key": "budget_fact",
+      "field": "amount",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "budget_category",
+        "event_name",
+        "event_date",
+        "event_type",
+        "event_location",
+        "event_status"
+      ],
+      "default_time_dimension_key": "event_date"
+    },
+    {
+      "key": "budget_spent_total",
+      "label": "预算已花费合计",
+      "table_key": "budget_fact",
+      "field": "spent",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "budget_category",
+        "event_name",
+        "event_date",
+        "event_type",
+        "event_location",
+        "event_status"
+      ],
+      "default_time_dimension_key": "event_date"
+    },
+    {
+      "key": "expense_total",
+      "label": "费用合计",
+      "table_key": "expense_fact",
+      "field": "cost",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "expense_description",
+        "expense_date",
+        "expense_approved",
+        "budget_category",
+        "event_name",
+        "event_date",
+        "event_type",
+        "event_location",
+        "event_status",
+        "member_first_name",
+        "member_last_name",
+        "member_position",
+        "t_shirt_size"
+      ],
+      "default_time_dimension_key": "expense_date"
+    },
+    {
+      "key": "expense_count",
+      "label": "费用条数",
+      "table_key": "expense_fact",
+      "field": "expense_id",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "expense_description",
+        "expense_date",
+        "expense_approved",
+        "budget_category",
+        "event_name",
+        "event_date",
+        "event_type",
+        "event_location",
+        "event_status",
+        "member_first_name",
+        "member_last_name",
+        "member_position",
+        "t_shirt_size"
+      ],
+      "default_time_dimension_key": "expense_date"
+    },
+    {
+      "key": "expense_avg_cost",
+      "label": "平均费用",
+      "table_key": "expense_fact",
+      "field": "cost",
+      "aggregation": "avg",
+      "supported_dimension_keys": [
+        "expense_description",
+        "expense_date",
+        "expense_approved",
+        "budget_category",
+        "event_name",
+        "event_date",
+        "event_type",
+        "event_location",
+        "event_status",
+        "member_first_name",
+        "member_last_name",
+        "member_position",
+        "t_shirt_size"
+      ],
+      "default_time_dimension_key": "expense_date"
+    },
+    {
+      "key": "income_total",
+      "label": "收入合计",
+      "table_key": "income_fact",
+      "field": "amount",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "income_date",
+        "income_source",
+        "member_first_name",
+        "member_last_name",
+        "member_position",
+        "t_shirt_size",
+        "major_name",
+        "home_state"
+      ],
+      "default_time_dimension_key": "income_date"
+    },
+    {
+      "key": "income_count",
+      "label": "收入笔数",
+      "table_key": "income_fact",
+      "field": "income_id",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "income_date",
+        "income_source",
+        "member_first_name",
+        "member_last_name",
+        "member_position",
+        "t_shirt_size",
+        "major_name",
+        "home_state"
+      ],
+      "default_time_dimension_key": "income_date"
+    }
+  ],
+  "dimensions": [
+    {
+      "key": "member_first_name",
+      "label": "名字",
+      "table_key": "member",
+      "field": "first_name",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "member_last_name",
+      "label": "姓氏",
+      "table_key": "member",
+      "field": "last_name",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "member_position",
+      "label": "成员职位",
+      "table_key": "member",
+      "field": "position",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "t_shirt_size",
+      "label": "T恤尺码",
+      "table_key": "member",
+      "field": "t_shirt_size",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "major_name",
+      "label": "专业名称",
+      "table_key": "major",
+      "field": "major_name",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "major_department",
+      "label": "院系",
+      "table_key": "major",
+      "field": "department",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "major_college",
+      "label": "学院",
+      "table_key": "major",
+      "field": "college",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "home_city",
+      "label": "家乡城市",
+      "table_key": "zip_code",
+      "field": "city",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "home_state",
+      "label": "家乡州",
+      "table_key": "zip_code",
+      "field": "state",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "event_name",
+      "label": "活动名称",
+      "table_key": "event",
+      "field": "event_name",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "event_date",
+      "label": "活动时间",
+      "table_key": "event",
+      "field": "event_date",
+      "kind": "time",
+      "operators": [
+        "between",
+        "gte",
+        "lte",
+        "eq"
+      ],
+      "time_format": "iso_datetime"
+    },
+    {
+      "key": "event_type",
+      "label": "活动类型",
+      "table_key": "event",
+      "field": "type",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "event_location",
+      "label": "活动地点",
+      "table_key": "event",
+      "field": "location",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "event_status",
+      "label": "活动状态",
+      "table_key": "event",
+      "field": "status",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "budget_category",
+      "label": "预算类别",
+      "table_key": "budget_fact",
+      "field": "category",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "expense_description",
+      "label": "费用说明",
+      "table_key": "expense_fact",
+      "field": "expense_description",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "expense_date",
+      "label": "费用日期",
+      "table_key": "expense_fact",
+      "field": "expense_date",
+      "kind": "time",
+      "operators": [
+        "between",
+        "gte",
+        "lte",
+        "eq"
+      ]
+    },
+    {
+      "key": "expense_approved",
+      "label": "是否审批通过",
+      "table_key": "expense_fact",
+      "field": "approved",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "income_date",
+      "label": "收入日期",
+      "table_key": "income_fact",
+      "field": "date_received",
+      "kind": "time",
+      "operators": [
+        "between",
+        "gte",
+        "lte",
+        "eq"
+      ]
+    },
+    {
+      "key": "income_source",
+      "label": "收入来源",
+      "table_key": "income_fact",
+      "field": "source",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    }
+  ],
+  "aliases": [
+    {
+      "alias": "member count",
+      "target_type": "metric",
+      "target_key": "member_count"
+    },
+    {
+      "alias": "members",
+      "target_type": "metric",
+      "target_key": "member_count"
+    },
+    {
+      "alias": "attendance",
+      "target_type": "metric",
+      "target_key": "attendance_count"
+    },
+    {
+      "alias": "attendance count",
+      "target_type": "metric",
+      "target_key": "attendance_count"
+    },
+    {
+      "alias": "expense total",
+      "target_type": "metric",
+      "target_key": "expense_total"
+    },
+    {
+      "alias": "total expense",
+      "target_type": "metric",
+      "target_key": "expense_total"
+    },
+    {
+      "alias": "expense count",
+      "target_type": "metric",
+      "target_key": "expense_count"
+    },
+    {
+      "alias": "average expense",
+      "target_type": "metric",
+      "target_key": "expense_avg_cost"
+    },
+    {
+      "alias": "average cost",
+      "target_type": "metric",
+      "target_key": "expense_avg_cost"
+    },
+    {
+      "alias": "budget amount",
+      "target_type": "metric",
+      "target_key": "budget_amount_total"
+    },
+    {
+      "alias": "budget spent",
+      "target_type": "metric",
+      "target_key": "budget_spent_total"
+    },
+    {
+      "alias": "income total",
+      "target_type": "metric",
+      "target_key": "income_total"
+    },
+    {
+      "alias": "total income",
+      "target_type": "metric",
+      "target_key": "income_total"
+    },
+    {
+      "alias": "income count",
+      "target_type": "metric",
+      "target_key": "income_count"
+    },
+    {
+      "alias": "home state",
+      "target_type": "dimension",
+      "target_key": "home_state"
+    },
+    {
+      "alias": "state",
+      "target_type": "dimension",
+      "target_key": "home_state"
+    },
+    {
+      "alias": "shirt size",
+      "target_type": "dimension",
+      "target_key": "t_shirt_size"
+    },
+    {
+      "alias": "t-shirt size",
+      "target_type": "dimension",
+      "target_key": "t_shirt_size"
+    },
+    {
+      "alias": "major",
+      "target_type": "dimension",
+      "target_key": "major_name"
+    },
+    {
+      "alias": "first name",
+      "target_type": "dimension",
+      "target_key": "member_first_name"
+    },
+    {
+      "alias": "last name",
+      "target_type": "dimension",
+      "target_key": "member_last_name"
+    },
+    {
+      "alias": "department",
+      "target_type": "dimension",
+      "target_key": "major_department"
+    },
+    {
+      "alias": "college",
+      "target_type": "dimension",
+      "target_key": "major_college"
+    },
+    {
+      "alias": "event",
+      "target_type": "dimension",
+      "target_key": "event_name"
+    },
+    {
+      "alias": "event name",
+      "target_type": "dimension",
+      "target_key": "event_name"
+    },
+    {
+      "alias": "event type",
+      "target_type": "dimension",
+      "target_key": "event_type"
+    },
+    {
+      "alias": "event status",
+      "target_type": "dimension",
+      "target_key": "event_status"
+    },
+    {
+      "alias": "event location",
+      "target_type": "dimension",
+      "target_key": "event_location"
+    },
+    {
+      "alias": "budget category",
+      "target_type": "dimension",
+      "target_key": "budget_category"
+    },
+    {
+      "alias": "category",
+      "target_type": "dimension",
+      "target_key": "budget_category"
+    },
+    {
+      "alias": "expense description",
+      "target_type": "dimension",
+      "target_key": "expense_description"
+    },
+    {
+      "alias": "approved",
+      "target_type": "dimension",
+      "target_key": "expense_approved"
+    },
+    {
+      "alias": "source",
+      "target_type": "dimension",
+      "target_key": "income_source"
+    },
+    {
+      "alias": "income source",
+      "target_type": "dimension",
+      "target_key": "income_source"
+    }
+  ],
+  "metric_versions": []
+}

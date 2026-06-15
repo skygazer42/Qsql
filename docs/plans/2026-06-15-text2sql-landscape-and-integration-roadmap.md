@@ -256,3 +256,19 @@
 - `SemanticQueryAgent` prompt 会注入相似成功示例，示例内容是 `SemanticQueryDraft`，不是 SQL。
 - 已补 `online_retail` 示例文件；后续可在同一 retriever 契约下替换为 Chroma/向量检索。
 - 变更记录：`docs/change-records/2026-06-15-semantic-few-shot-p2-3.md`
+
+### 2026-06-15 BIRD 多表 harder 子集评测已落地
+
+- 已新增三套 BIRD Mini-Dev 多表 BI 子集语义目录、plugin、few-shot 示例与 EX 评测集：
+  - `bird_debit_card_specializing`
+  - `bird_student_club`
+  - `bird_financial`
+- 当前代码下的真实 SQLite EX 结果：
+  - `bird_debit_card_specializing`：`12/12`，`repeat=3 -> 36/36`
+  - `bird_student_club`：`12/12`，`repeat=3 -> 36/36`
+  - `bird_financial`：`12/12`，`repeat=3 -> 36/36`
+- 三套 harder 子集合计：
+  - 单轮 `36/36 = 100%`
+  - `repeat=3` 累计 `108/108 = 100%`
+  - `stability_rate=1.0000`
+- 这组结果证明当前底座在**受控多表 BI 问数**场景下已经稳定，但**不能外推为 full BIRD / 开放域 arbitrary SQL 的整体准确率**。

@@ -71,10 +71,73 @@ class SemanticPostprocessor:
                 filter_obj.operator = "lte"
 
     @staticmethod
+    def _coerce_numeric_value(value: Any) -> Any:
+        if isinstance(value, list):
+            return [SemanticPostprocessor._coerce_numeric_value(item) for item in value]
+        if isinstance(value, (int, float)):
+            return value
+
+        text = str(value).strip()
+        if re.fullmatch(r"-?\d+", text):
+            return int(text)
+        if re.fullmatch(r"-?\d+\.\d+", text):
+            return float(text)
+        return value
+
+    @staticmethod
+    def _normalise_filter_values(
+        *,
+        dimensions: dict[str, SemanticDimensionDefinition],
+        semantic_query: SemanticQueryDraft,
+    ) -> None:
+        # [CUSTOM] 数值维度统一转成真数值，避免 EX 评测和 SQL builder 被 "6" vs 6 这类噪音干扰。
+        for filter_obj in semantic_query.filters:
+            dimension = dimensions.get(filter_obj.dimension_key)
+            if dimension is None or dimension.kind != "number":
+                continue
+            filter_obj.value = SemanticPostprocessor._coerce_numeric_value(
+                filter_obj.value
+            )
+
+    @staticmethod
+    def _normalise_time_range(
+        *,
+        dimensions: dict[str, SemanticDimensionDefinition],
+        semantic_query: SemanticQueryDraft,
+    ) -> None:
+        time_range = semantic_query.time_range
+        if time_range is None:
+            return
+
+        dimension = dimensions.get(time_range.dimension_key)
+        if dimension is None or dimension.kind != "time":
+            return
+
+        time_format = (dimension.time_format or "").strip().lower()
+        if time_format != "iso_datetime":
+            return
+
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", time_range.end.strip()):
+            time_range.end = f"{time_range.end}T23:59:59"
+
+    @staticmethod
+    def _time_range_bounds_for_year(
+        *,
+        year: str,
+        dimension: SemanticDimensionDefinition | None,
+    ) -> tuple[str, str]:
+        # [CUSTOM] 支持非 ISO 时间键；BIRD yearmonth 这类 YYYYMM 维度不能硬补 YYYY-MM-DD。
+        time_format = (dimension.time_format or "").strip().lower() if dimension else ""
+        if time_format == "yyyymm":
+            return f"{year}01", f"{year}12"
+        return f"{year}-01-01", f"{year}-12-31"
+
+    @staticmethod
     def _repair_explicit_year(
         *,
         question: str,
         metric: SemanticMetricDefinition | None,
+        dimensions: dict[str, SemanticDimensionDefinition],
         semantic_query: SemanticQueryDraft,
     ) -> None:
         if semantic_query.time_range is not None or metric is None:
@@ -85,10 +148,15 @@ class SemanticPostprocessor:
             return
 
         year = year_match.group(1)
+        time_dimension = dimensions.get(metric.default_time_dimension_key)
+        start, end = SemanticPostprocessor._time_range_bounds_for_year(
+            year=year,
+            dimension=time_dimension,
+        )
         semantic_query.time_range = SemanticTimeRange(
             dimension_key=metric.default_time_dimension_key,
-            start=f"{year}-01-01",
-            end=f"{year}-12-31",
+            start=start,
+            end=end,
         )
 
     def _today_date(self) -> date:
@@ -206,6 +274,61 @@ class SemanticPostprocessor:
         return terms
 
     @staticmethod
+    def _is_strong_metric_term(term: str) -> bool:
+        normalized = term.strip().lower()
+        if not normalized:
+            return False
+        english_keywords = {
+            "count",
+            "amount",
+            "total",
+            "sum",
+            "avg",
+            "average",
+            "mean",
+            "min",
+            "max",
+            "distinct",
+            "number",
+            "qty",
+            "quantity",
+            "volume",
+            "rate",
+            "ratio",
+            "sales",
+            "revenue",
+            "profit",
+        }
+        # [CUSTOM] 英文 metric 词按 token 命中，避免 accounts/clients 这类实体名误伤为 count。
+        ascii_tokens = [
+            token
+            for token in re.split(r"[^a-z0-9]+", normalized.replace("_", " "))
+            if token
+        ]
+        if any(token in english_keywords for token in ascii_tokens):
+            return True
+
+        chinese_keywords = (
+            "金额",
+            "总额",
+            "总数",
+            "数量",
+            "销量",
+            "销售额",
+            "笔数",
+            "均值",
+            "平均",
+            "最大",
+            "最小",
+            "占比",
+            "比例",
+            "率",
+        )
+        if any(keyword in normalized for keyword in chinese_keywords):
+            return True
+        return normalized.endswith(("数", "量", "额", "率"))
+
+    @staticmethod
     def _mark_multi_metric_questions(
         *,
         question: str,
@@ -214,7 +337,12 @@ class SemanticPostprocessor:
     ) -> None:
         matched_metric_keys: set[str] = set()
         for metric_key, terms in SemanticPostprocessor._metric_terms(catalog).items():
-            if any(term and term in question for term in terms):
+            if any(
+                term
+                and term in question
+                and SemanticPostprocessor._is_strong_metric_term(term)
+                for term in terms
+            ):
                 matched_metric_keys.add(metric_key)
 
         if len(matched_metric_keys) <= 1:
@@ -278,15 +406,20 @@ class SemanticPostprocessor:
         self,
         *,
         question: str,
+        metric: SemanticMetricDefinition | None,
         dimensions: dict[str, SemanticDimensionDefinition],
         semantic_query: SemanticQueryDraft,
         plugin: dict[str, Any],
     ) -> None:
+        # [CUSTOM] plugin 只补当前 metric 可支持的维度，并优先用题面 alias 修正已有 filter 值。
+        supported_dimension_keys = set(metric.supported_dimension_keys) if metric else set()
         for mapping in plugin.get("value_mappings", []):
             if not isinstance(mapping, dict):
                 continue
             dimension_key = str(mapping.get("dimension_key", ""))
             if dimension_key not in dimensions:
+                continue
+            if supported_dimension_keys and dimension_key not in supported_dimension_keys:
                 continue
 
             operator = str(mapping.get("operator") or "eq")
@@ -294,8 +427,17 @@ class SemanticPostprocessor:
             if not isinstance(terms, dict):
                 continue
 
+            matched_aliases = [
+                str(alias) for alias in terms if str(alias) and str(alias) in question
+            ]
+            matched_aliases.sort(key=len, reverse=True)
+            matched_value = terms[matched_aliases[0]] if matched_aliases else None
+
             for filter_obj in semantic_query.filters:
                 if filter_obj.dimension_key != dimension_key:
+                    continue
+                if matched_value is not None:
+                    filter_obj.value = matched_value
                     continue
                 filter_value = str(filter_obj.value)
                 if filter_value in terms:
@@ -304,16 +446,67 @@ class SemanticPostprocessor:
             if self._has_filter(semantic_query, dimension_key):
                 continue
 
-            for alias, value in terms.items():
-                if str(alias) in question:
-                    semantic_query.filters.append(
-                        SemanticFilter(
-                            dimension_key=dimension_key,
-                            operator=operator,
-                            value=value,
-                        )
+            if matched_value is not None:
+                semantic_query.filters.append(
+                    SemanticFilter(
+                        dimension_key=dimension_key,
+                        operator=operator,
+                        value=matched_value,
                     )
-                    break
+                )
+
+    @staticmethod
+    def _normalise_text(value: Any) -> str:
+        return str(value).strip().lower()
+
+    def _prune_conflicting_filters(
+        self,
+        *,
+        question: str,
+        metric: SemanticMetricDefinition | None,
+        semantic_query: SemanticQueryDraft,
+        plugin: dict[str, Any],
+    ) -> None:
+        # [CUSTOM] 清理 plugin/模型叠加出来的冲突 filter，避免 region/district 角色串位。
+        supported_dimension_keys = set(metric.supported_dimension_keys) if metric else set()
+        if supported_dimension_keys:
+            semantic_query.filters = [
+                filter_obj
+                for filter_obj in semantic_query.filters
+                if filter_obj.dimension_key in supported_dimension_keys
+            ]
+
+        value_targets: dict[str, set[str]] = {}
+        for mapping in plugin.get("value_mappings", []):
+            if not isinstance(mapping, dict):
+                continue
+            dimension_key = str(mapping.get("dimension_key", ""))
+            if supported_dimension_keys and dimension_key not in supported_dimension_keys:
+                continue
+            terms = mapping.get("terms", {})
+            if not isinstance(terms, dict):
+                continue
+            for alias, db_value in terms.items():
+                alias_text = str(alias)
+                if not alias_text or alias_text not in question:
+                    continue
+                value_targets.setdefault(
+                    self._normalise_text(alias_text), set()
+                ).add(dimension_key)
+                value_targets.setdefault(
+                    self._normalise_text(db_value), set()
+                ).add(dimension_key)
+
+        pruned_filters: list[SemanticFilter] = []
+        for filter_obj in semantic_query.filters:
+            candidate_dimensions = value_targets.get(
+                self._normalise_text(filter_obj.value),
+                set(),
+            )
+            if candidate_dimensions and filter_obj.dimension_key not in candidate_dimensions:
+                continue
+            pruned_filters.append(filter_obj)
+        semantic_query.filters = pruned_filters
 
     def _retrieve_values(
         self,
@@ -379,6 +572,7 @@ class SemanticPostprocessor:
         self._repair_explicit_year(
             question=question,
             metric=metric,
+            dimensions=dimensions,
             semantic_query=semantic_query,
         )
         self._repair_relative_time(
@@ -399,11 +593,19 @@ class SemanticPostprocessor:
             semantic_query=semantic_query,
         )
         self._normalise_filter_operators(semantic_query)
+        plugin = self._load_plugin(catalog.dataset_id)
         self._apply_value_mappings(
             question=question,
+            metric=metric,
             dimensions=dimensions,
             semantic_query=semantic_query,
-            plugin=self._load_plugin(catalog.dataset_id),
+            plugin=plugin,
+        )
+        self._prune_conflicting_filters(
+            question=question,
+            metric=metric,
+            semantic_query=semantic_query,
+            plugin=plugin,
         )
         self._apply_retrieved_values(
             dimensions=dimensions,
@@ -413,6 +615,14 @@ class SemanticPostprocessor:
                 catalog=catalog,
                 dimensions=dimensions,
             ),
+        )
+        self._normalise_time_range(
+            dimensions=dimensions,
+            semantic_query=semantic_query,
+        )
+        self._normalise_filter_values(
+            dimensions=dimensions,
+            semantic_query=semantic_query,
         )
         self._normalise_filter_operators(semantic_query)
         return semantic_query

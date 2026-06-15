@@ -1,0 +1,61 @@
+{
+  "dataset_id": "bird_student_club",
+  "value_mappings": [
+    {
+      "dimension_key": "event_name",
+      "operator": "eq",
+      "terms": {
+        "Women's Soccer": "Women's Soccer",
+        "October Meeting": "October Meeting",
+        "April Speaker": "April Speaker",
+        "Yearly Kickoff": "Yearly Kickoff"
+      }
+    },
+    {
+      "dimension_key": "t_shirt_size",
+      "operator": "eq",
+      "terms": {
+        "Medium": "Medium",
+        "Large": "Large",
+        "Small": "Small",
+        "X-Large": "X-Large",
+        "medium": "Medium",
+        "large": "Large",
+        "small": "Small"
+      }
+    },
+    {
+      "dimension_key": "member_position",
+      "operator": "eq",
+      "terms": {
+        "Vice President": "Vice President",
+        "President": "President",
+        "Member": "Member"
+      }
+    },
+    {
+      "dimension_key": "income_source",
+      "operator": "eq",
+      "terms": {
+        "Dues": "Dues",
+        "Fundraising": "Fundraising",
+        "School Appropration": "School Appropration"
+      }
+    },
+    {
+      "dimension_key": "major_name",
+      "operator": "eq",
+      "terms": {
+        "Physics Teaching": "Physics Teaching"
+      }
+    },
+    {
+      "dimension_key": "expense_approved",
+      "operator": "eq",
+      "terms": {
+        "true": "true",
+        "false": "false"
+      }
+    }
+  ]
+}

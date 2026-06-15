@@ -1,0 +1,50 @@
+{
+  "dataset_id": "bird_debit_card_specializing",
+  "value_mappings": [
+    {
+      "dimension_key": "gasstation_country",
+      "operator": "eq",
+      "terms": {
+        "CZE": "CZE",
+        "SVK": "SVK",
+        "Czech Republic": "CZE",
+        "Slovakia": "SVK"
+      }
+    },
+    {
+      "dimension_key": "customer_currency",
+      "operator": "eq",
+      "terms": {
+        "EUR": "EUR",
+        "CZK": "CZK",
+        "euro": "EUR",
+        "euros": "EUR",
+        "Czech koruna": "CZK",
+        "koruna": "CZK"
+      }
+    },
+    {
+      "dimension_key": "customer_segment",
+      "operator": "eq",
+      "terms": {
+        "SME": "SME",
+        "LAM": "LAM",
+        "KAM": "KAM"
+      }
+    },
+    {
+      "dimension_key": "gasstation_segment",
+      "operator": "eq",
+      "terms": {
+        "Premium": "Premium",
+        "premium": "Premium",
+        "Discount": "Discount",
+        "discount": "Discount",
+        "Value for money": "Value for money",
+        "value for money": "Value for money",
+        "Other": "Other",
+        "other": "Other"
+      }
+    }
+  ]
+}

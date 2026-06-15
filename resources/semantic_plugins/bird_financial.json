@@ -1,0 +1,105 @@
+{
+  "dataset_id": "bird_financial",
+  "value_mappings": [
+    {
+      "dimension_key": "client_gender",
+      "operator": "eq",
+      "terms": {
+        "female": "F",
+        "male": "M",
+        "F": "F",
+        "M": "M"
+      }
+    },
+    {
+      "dimension_key": "client_region",
+      "operator": "eq",
+      "terms": {
+        "Prague": "Prague",
+        "Central Bohemia": "central Bohemia",
+        "central Bohemia": "central Bohemia",
+        "East Bohemia": "east Bohemia",
+        "east Bohemia": "east Bohemia",
+        "North Bohemia": "north Bohemia",
+        "north Bohemia": "north Bohemia",
+        "North Moravia": "north Moravia",
+        "north Moravia": "north Moravia",
+        "South Bohemia": "south Bohemia",
+        "south Bohemia": "south Bohemia",
+        "South Moravia": "south Moravia",
+        "south Moravia": "south Moravia",
+        "West Bohemia": "west Bohemia",
+        "west Bohemia": "west Bohemia"
+      }
+    },
+    {
+      "dimension_key": "account_region",
+      "operator": "eq",
+      "terms": {
+        "Prague": "Prague",
+        "Central Bohemia": "central Bohemia",
+        "central Bohemia": "central Bohemia",
+        "East Bohemia": "east Bohemia",
+        "east Bohemia": "east Bohemia",
+        "North Bohemia": "north Bohemia",
+        "north Bohemia": "north Bohemia",
+        "North Moravia": "north Moravia",
+        "north Moravia": "north Moravia",
+        "South Bohemia": "south Bohemia",
+        "south Bohemia": "south Bohemia",
+        "South Moravia": "south Moravia",
+        "south Moravia": "south Moravia",
+        "West Bohemia": "west Bohemia",
+        "west Bohemia": "west Bohemia"
+      }
+    },
+    {
+      "dimension_key": "client_district_name",
+      "operator": "eq",
+      "terms": {
+        "Sokolov": "Sokolov"
+      }
+    },
+    {
+      "dimension_key": "account_district_name",
+      "operator": "eq",
+      "terms": {
+        "Sokolov": "Sokolov"
+      }
+    },
+    {
+      "dimension_key": "account_frequency",
+      "operator": "eq",
+      "terms": {
+        "monthly issuance": "POPLATEK MESICNE",
+        "monthly statement": "POPLATEK MESICNE",
+        "after transaction issuance": "POPLATEK PO OBRATU",
+        "after transaction statement": "POPLATEK PO OBRATU",
+        "weekly issuance": "POPLATEK TYDNE",
+        "weekly statement": "POPLATEK TYDNE",
+        "POPLATEK MESICNE": "POPLATEK MESICNE",
+        "POPLATEK PO OBRATU": "POPLATEK PO OBRATU",
+        "POPLATEK TYDNE": "POPLATEK TYDNE"
+      }
+    },
+    {
+      "dimension_key": "card_type",
+      "operator": "eq",
+      "terms": {
+        "classic": "classic",
+        "gold": "gold",
+        "junior": "junior"
+      }
+    },
+    {
+      "dimension_key": "disp_type",
+      "operator": "eq",
+      "terms": {
+        "owner": "OWNER",
+        "OWNER": "OWNER",
+        "disponent": "DISPONENT",
+        "DISPONENT": "DISPONENT"
+      }
+    }
+  ]
+}

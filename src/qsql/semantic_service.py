@@ -10,6 +10,7 @@ from typing import Any, Callable
 from .schemas import (
     SemanticCandidateSelection,
     SemanticCatalog,
+    SemanticClarificationOption,
     SemanticParseResponse,
     SemanticQueryCandidate,
     SemanticQueryDraft,
@@ -170,6 +171,80 @@ class SemanticQueryService:
             selected_index=selected_index,
         )
 
+    @staticmethod
+    def _metric_terms(catalog: SemanticCatalog) -> dict[str, set[str]]:
+        terms = {metric.key: {metric.key, metric.label} for metric in catalog.metrics}
+        for alias in catalog.aliases:
+            if alias.target_type == "metric" and alias.target_key in terms:
+                terms[alias.target_key].add(alias.alias)
+        return terms
+
+    @staticmethod
+    def _metric_clarification_options(
+        *,
+        question: str,
+        catalog: SemanticCatalog,
+    ) -> list[SemanticClarificationOption]:
+        # [CUSTOM] 多指标澄清只从 catalog 中已声明的指标和别名生成候选，不引入业务硬编码。
+        metric_terms = SemanticQueryService._metric_terms(catalog)
+        matched_metric_keys = {
+            metric_key
+            for metric_key, terms in metric_terms.items()
+            if any(term and term in question for term in terms)
+        }
+        if len(matched_metric_keys) <= 1:
+            return []
+
+        return [
+            SemanticClarificationOption(
+                target_type="metric",
+                key=metric.key,
+                label=metric.label,
+                value={"metric_key": metric.key},
+            )
+            for metric in catalog.metrics
+            if metric.key in matched_metric_keys
+        ]
+
+    @staticmethod
+    def _time_range_clarification_options(
+        *,
+        catalog: SemanticCatalog,
+        semantic_query: SemanticQueryDraft,
+    ) -> list[SemanticClarificationOption]:
+        metric = next(
+            (
+                item
+                for item in catalog.metrics
+                if item.key == semantic_query.metric_key
+            ),
+            None,
+        )
+        dimension_key = metric.default_time_dimension_key if metric else None
+        if not dimension_key:
+            return []
+
+        return [
+            SemanticClarificationOption(
+                target_type="time_range",
+                key="current_year",
+                label="今年",
+                value={"preset": "current_year", "dimension_key": dimension_key},
+            ),
+            SemanticClarificationOption(
+                target_type="time_range",
+                key="current_month",
+                label="本月",
+                value={"preset": "current_month", "dimension_key": dimension_key},
+            ),
+            SemanticClarificationOption(
+                target_type="time_range",
+                key="custom_range",
+                label="自定义时间范围",
+                value={"preset": "custom_range", "dimension_key": dimension_key},
+            ),
+        ]
+
     def _load_catalog_and_select_candidate(
         self,
         *,
@@ -231,6 +306,10 @@ class SemanticQueryService:
                 status="clarification",
                 clarification_question=semantic_query.clarification_question
                 or "请补充查询条件",
+                clarification_options=self._metric_clarification_options(
+                    question=request_model.question,
+                    catalog=catalog,
+                ),
                 semantic_query=semantic_query,
                 execution_plan=None,
                 candidate_selection=selected_selection,
@@ -248,6 +327,10 @@ class SemanticQueryService:
                 question=request_model.question,
                 status="clarification",
                 clarification_question="请补充时间范围，例如今年、本月或具体起止日期。",
+                clarification_options=self._time_range_clarification_options(
+                    catalog=catalog,
+                    semantic_query=semantic_query,
+                ),
                 semantic_query=semantic_query,
                 execution_plan=None,
                 candidate_selection=selected_selection,

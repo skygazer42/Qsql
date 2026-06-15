@@ -480,6 +480,15 @@ class SemanticValueCandidate(ValidateRequest):
     source: Optional[str] = None
 
 
+class SemanticClarificationOption(ValidateRequest):
+    """结构化澄清候选项。"""
+
+    target_type: str = Field(min_length=1)
+    key: str = Field(min_length=1)
+    label: str = Field(min_length=1)
+    value: Any = None
+
+
 class SemanticQueryRequest(ValidateRequest):
     """语义查询请求。"""
 
@@ -540,6 +549,9 @@ class SemanticParseResponse(ValidateRequest):
     question: str = Field(min_length=1)
     status: str = Field(min_length=1)
     clarification_question: Optional[str] = None
+    clarification_options: list[SemanticClarificationOption] = Field(
+        default_factory=list
+    )
     semantic_query: Optional[SemanticQueryDraft] = None
     execution_plan: Optional[QueryExecutionPlan] = None
     candidate_selection: Optional[SemanticCandidateSelection] = None
@@ -554,6 +566,9 @@ class SemanticRunResponse(ValidateRequest):
     question: str = Field(min_length=1)
     status: str = Field(min_length=1)
     clarification_question: Optional[str] = None
+    clarification_options: list[SemanticClarificationOption] = Field(
+        default_factory=list
+    )
     semantic_query: Optional[SemanticQueryDraft] = None
     execution_plan: Optional[QueryExecutionPlan] = None
     candidate_selection: Optional[SemanticCandidateSelection] = None

@@ -44,6 +44,15 @@ def _write_catalog(tmp_path: Path, dataset_id: str = "sales") -> Path:
                         "supported_dimension_keys": ["city", "order_date"],
                         "default_time_dimension_key": "order_date",
                         "allowed_version_keys": ["won_only"],
+                    },
+                    {
+                        "key": "order_count",
+                        "label": "订单数",
+                        "table_key": "sales_order_wide",
+                        "field": "order_id",
+                        "aggregation": "count_distinct",
+                        "supported_dimension_keys": ["city", "order_date"],
+                        "default_time_dimension_key": "order_date",
                     }
                 ],
                 "dimensions": [
@@ -66,6 +75,7 @@ def _write_catalog(tmp_path: Path, dataset_id: str = "sales") -> Path:
                 ],
                 "aliases": [
                     {"alias": "成交金额", "target_type": "metric", "target_key": "order_amount"},
+                    {"alias": "订单数", "target_type": "metric", "target_key": "order_count"},
                     {"alias": "城市", "target_type": "dimension", "target_key": "city"},
                 ],
                 "metric_versions": [
@@ -218,6 +228,13 @@ class _ReadyParser:
         return _valid_draft()
 
 
+class _MissingTimeParser:
+    def parse(self, question, catalog, history=None):
+        draft = _valid_draft()
+        draft.time_range = None
+        return draft
+
+
 def test_semantic_query_service_returns_clarification(tmp_path: Path):
     semantic_dir = _write_catalog(tmp_path)
     service = SemanticQueryService(
@@ -232,6 +249,55 @@ def test_semantic_query_service_returns_clarification(tmp_path: Path):
     assert result.status == "clarification"
     assert result.clarification_question == "你要查哪个时间范围？"
     assert result.execution_plan is None
+
+
+def test_semantic_query_service_returns_metric_clarification_options(
+    tmp_path: Path,
+):
+    semantic_dir = _write_catalog(tmp_path)
+    service = SemanticQueryService(
+        semantic_base_dir=semantic_dir,
+        parser=_ReadyParser(),
+    )
+
+    result = service.prepare_query(
+        SemanticQueryRequest(dataset_id="sales", question="一月成交金额和订单数分别是多少")
+    )
+
+    assert result.status == "clarification"
+    assert result.clarification_options is not None
+    assert [option.target_type for option in result.clarification_options] == [
+        "metric",
+        "metric",
+    ]
+    assert {option.key for option in result.clarification_options} == {
+        "order_amount",
+        "order_count",
+    }
+
+
+def test_semantic_query_service_returns_time_range_clarification_options(
+    tmp_path: Path,
+):
+    semantic_dir = _write_catalog(tmp_path)
+    service = SemanticQueryService(
+        semantic_base_dir=semantic_dir,
+        parser=_MissingTimeParser(),
+    )
+
+    result = service.prepare_query(
+        SemanticQueryRequest(dataset_id="sales", question="成交金额是多少")
+    )
+
+    assert result.status == "clarification"
+    assert result.clarification_options is not None
+    assert [option.key for option in result.clarification_options] == [
+        "current_year",
+        "current_month",
+        "custom_range",
+    ]
+    assert result.clarification_options[0].target_type == "time_range"
+    assert result.clarification_options[0].value["dimension_key"] == "order_date"
 
 
 def test_semantic_query_service_returns_execution_plan(tmp_path: Path):

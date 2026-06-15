@@ -1,6 +1,6 @@
 # 2026-06-15 Text2SQL 主流方案调研与 QSQL 集成路线图
 
-- 状态：实施中（P0-1 / P0-2 / P1-1 / P1-2 最小实现已落地）
+- 状态：实施中（P0-1 / P0-2 / P1-1 / P1-2 / P1-3 最小实现已落地）
 - 范围：基于主流开源 text2sql 项目与 2024–2026 学术进展，规划可集成进 QSQL 或用于优化的方向。
 - 结论先行：**QSQL 当前的「语义层 + LLM 受控解析」路线与业界公认的可靠方向一致，不需要推翻；本路线图聚焦补齐已被验证的几块短板。**
 
@@ -38,7 +38,7 @@
 | P0-2 | 多候选投票 + 执行反馈（适配 draft 范式） | 已完成最小实现：draft 投票 + 空结果候选切换 | 契合（投在 draft 层） |
 | P1-1 | value retrieval（列值索引） | 已完成最小实现：metadata value_mapping / 样例值召回 + Pydantic 候选契约 | 契合 |
 | P1-2 | 评测对齐 BIRD / Spider 风格 | 已完成最小实现：可选 expected_sql + EX 结果集等价统计 | 契合 |
-| P1-3 | 澄清升级：多选题 + 信息增益 | `semantic_service.py` 开放式澄清 | 契合 |
+| P1-3 | 澄清升级：多选题 + 信息增益 | 已完成最小实现：结构化澄清候选项 | 契合 |
 | P2-1 | 相对时间解析（上季度 / 近 30 天） | `semantic_postprocessor.py` 正则较弱 | 契合 |
 | P2-2 | 多指标查询 | `_mark_multi_metric_questions` 直接转澄清 | 契合 |
 | P2-3 | few-shot 示例检索 | 已有 chromadb，可复用 | 契合 |
@@ -222,3 +222,11 @@
 - summary 输出 `ex_checked` / `ex_ok` / `ex_failed`，仍保留 level/category 分层统计。
 - `online_retail_extended.jsonl` 已补 L1/L2/L3 各一条标准 SQL 样本。
 - 变更记录：`docs/change-records/2026-06-15-semantic-eval-ex-p1-2.md`
+
+### 2026-06-15 P1-3 已落地（最小实现）
+
+- 新增 `SemanticClarificationOption`，用 Pydantic 承载结构化澄清候选项。
+- `SemanticParseResponse` / `SemanticRunResponse` 保留 `clarification_question`，并新增 `clarification_options`。
+- 多指标歧义时，service 会从 catalog 指标和别名中提取已命中的指标候选。
+- 缺时间范围时，service 会基于指标默认时间维度返回今年、本月、自定义时间范围三个通用候选。
+- 变更记录：`docs/change-records/2026-06-15-structured-clarification-p1-3.md`

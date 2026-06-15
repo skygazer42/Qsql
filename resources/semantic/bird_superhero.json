@@ -1,0 +1,478 @@
+{
+  "catalog_version": "2026-06-15",
+  "dataset_id": "bird_superhero",
+  "tables": [
+    {
+      "key": "hero_dim",
+      "label": "英雄维表",
+      "physical_table": "superhero",
+      "description": "英雄主表"
+    },
+    {
+      "key": "publisher_dim",
+      "label": "出版社维表",
+      "physical_table": "publisher",
+      "description": "出版社信息"
+    },
+    {
+      "key": "race_dim",
+      "label": "种族维表",
+      "physical_table": "race",
+      "description": "英雄种族"
+    },
+    {
+      "key": "gender_dim",
+      "label": "性别维表",
+      "physical_table": "gender",
+      "description": "英雄性别"
+    },
+    {
+      "key": "alignment_dim",
+      "label": "阵营维表",
+      "physical_table": "alignment",
+      "description": "英雄阵营"
+    },
+    {
+      "key": "eye_colour_dim",
+      "label": "眼睛颜色维表",
+      "physical_table": "colour",
+      "description": "英雄眼睛颜色"
+    },
+    {
+      "key": "hair_colour_dim",
+      "label": "头发颜色维表",
+      "physical_table": "colour",
+      "description": "英雄头发颜色"
+    },
+    {
+      "key": "hero_power_fact",
+      "label": "英雄能力桥表",
+      "physical_table": "hero_power",
+      "description": "英雄与超能力关系"
+    },
+    {
+      "key": "power_dim",
+      "label": "超能力维表",
+      "physical_table": "superpower",
+      "description": "超能力枚举"
+    },
+    {
+      "key": "hero_attribute_fact",
+      "label": "英雄属性桥表",
+      "physical_table": "hero_attribute",
+      "description": "英雄属性打分"
+    },
+    {
+      "key": "attribute_dim",
+      "label": "属性维表",
+      "physical_table": "attribute",
+      "description": "属性名称"
+    }
+  ],
+  "entities": [
+    {
+      "key": "hero_id",
+      "table_key": "hero_dim",
+      "field": "id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "publisher_id",
+      "table_key": "publisher_dim",
+      "field": "id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "race_id",
+      "table_key": "race_dim",
+      "field": "id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "gender_id",
+      "table_key": "gender_dim",
+      "field": "id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "alignment_id",
+      "table_key": "alignment_dim",
+      "field": "id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "eye_colour_id",
+      "table_key": "eye_colour_dim",
+      "field": "id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "hair_colour_id",
+      "table_key": "hair_colour_dim",
+      "field": "id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "power_id",
+      "table_key": "power_dim",
+      "field": "id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "attribute_id",
+      "table_key": "attribute_dim",
+      "field": "id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "hero_publisher_id",
+      "table_key": "hero_dim",
+      "field": "publisher_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "hero_race_id",
+      "table_key": "hero_dim",
+      "field": "race_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "hero_gender_id",
+      "table_key": "hero_dim",
+      "field": "gender_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "hero_alignment_id",
+      "table_key": "hero_dim",
+      "field": "alignment_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "hero_eye_colour_id",
+      "table_key": "hero_dim",
+      "field": "eye_colour_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "hero_hair_colour_id",
+      "table_key": "hero_dim",
+      "field": "hair_colour_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "hero_power_hero_id",
+      "table_key": "hero_power_fact",
+      "field": "hero_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "hero_power_power_id",
+      "table_key": "hero_power_fact",
+      "field": "power_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "hero_attribute_hero_id",
+      "table_key": "hero_attribute_fact",
+      "field": "hero_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "hero_attribute_attribute_id",
+      "table_key": "hero_attribute_fact",
+      "field": "attribute_id",
+      "entity_type": "foreign"
+    }
+  ],
+  "relationships": [
+    {
+      "key": "hero_to_publisher",
+      "left_entity_key": "hero_publisher_id",
+      "right_entity_key": "publisher_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "hero_to_race",
+      "left_entity_key": "hero_race_id",
+      "right_entity_key": "race_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "hero_to_gender",
+      "left_entity_key": "hero_gender_id",
+      "right_entity_key": "gender_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "hero_to_alignment",
+      "left_entity_key": "hero_alignment_id",
+      "right_entity_key": "alignment_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "hero_to_eye_colour",
+      "left_entity_key": "hero_eye_colour_id",
+      "right_entity_key": "eye_colour_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "hero_to_hair_colour",
+      "left_entity_key": "hero_hair_colour_id",
+      "right_entity_key": "hair_colour_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "hero_power_to_hero",
+      "left_entity_key": "hero_power_hero_id",
+      "right_entity_key": "hero_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "hero_power_to_power",
+      "left_entity_key": "hero_power_power_id",
+      "right_entity_key": "power_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "hero_attribute_to_hero",
+      "left_entity_key": "hero_attribute_hero_id",
+      "right_entity_key": "hero_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "hero_attribute_to_attribute",
+      "left_entity_key": "hero_attribute_attribute_id",
+      "right_entity_key": "attribute_id",
+      "join_type": "left",
+      "allowed": true
+    }
+  ],
+  "metrics": [
+    {
+      "key": "hero_count",
+      "label": "英雄数",
+      "table_key": "hero_dim",
+      "field": "id",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "publisher_name",
+        "hero_race",
+        "hero_gender",
+        "hero_alignment",
+        "eye_colour",
+        "hair_colour"
+      ]
+    },
+    {
+      "key": "powered_hero_count",
+      "label": "能力英雄数",
+      "table_key": "hero_power_fact",
+      "field": "hero_id",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "power_name",
+        "publisher_name",
+        "hero_race",
+        "hero_gender",
+        "hero_alignment",
+        "eye_colour",
+        "hair_colour"
+      ]
+    },
+    {
+      "key": "hero_attribute_value_avg",
+      "label": "属性均值",
+      "table_key": "hero_attribute_fact",
+      "field": "attribute_value",
+      "aggregation": "avg",
+      "supported_dimension_keys": [
+        "attribute_name",
+        "publisher_name",
+        "hero_race",
+        "hero_gender",
+        "hero_alignment",
+        "eye_colour",
+        "hair_colour"
+      ]
+    },
+    {
+      "key": "attributed_hero_count",
+      "label": "属性英雄数",
+      "table_key": "hero_attribute_fact",
+      "field": "hero_id",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "attribute_name",
+        "publisher_name",
+        "hero_race",
+        "hero_gender",
+        "hero_alignment",
+        "eye_colour",
+        "hair_colour"
+      ]
+    }
+  ],
+  "dimensions": [
+    {
+      "key": "publisher_name",
+      "label": "出版社",
+      "table_key": "publisher_dim",
+      "field": "publisher_name",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "hero_race",
+      "label": "种族",
+      "table_key": "race_dim",
+      "field": "race",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "hero_gender",
+      "label": "性别",
+      "table_key": "gender_dim",
+      "field": "gender",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "hero_alignment",
+      "label": "阵营",
+      "table_key": "alignment_dim",
+      "field": "alignment",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "eye_colour",
+      "label": "眼睛颜色",
+      "table_key": "eye_colour_dim",
+      "field": "colour",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "hair_colour",
+      "label": "头发颜色",
+      "table_key": "hair_colour_dim",
+      "field": "colour",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "power_name",
+      "label": "超能力",
+      "table_key": "power_dim",
+      "field": "power_name",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "attribute_name",
+      "label": "属性名称",
+      "table_key": "attribute_dim",
+      "field": "attribute_name",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    }
+  ],
+  "aliases": [
+    {
+      "alias": "hero count",
+      "target_type": "metric",
+      "target_key": "hero_count"
+    },
+    {
+      "alias": "powered hero count",
+      "target_type": "metric",
+      "target_key": "powered_hero_count"
+    },
+    {
+      "alias": "average attribute value",
+      "target_type": "metric",
+      "target_key": "hero_attribute_value_avg"
+    },
+    {
+      "alias": "attributed hero count",
+      "target_type": "metric",
+      "target_key": "attributed_hero_count"
+    },
+    {
+      "alias": "publisher",
+      "target_type": "dimension",
+      "target_key": "publisher_name"
+    },
+    {
+      "alias": "race",
+      "target_type": "dimension",
+      "target_key": "hero_race"
+    },
+    {
+      "alias": "gender",
+      "target_type": "dimension",
+      "target_key": "hero_gender"
+    },
+    {
+      "alias": "alignment",
+      "target_type": "dimension",
+      "target_key": "hero_alignment"
+    },
+    {
+      "alias": "eye color",
+      "target_type": "dimension",
+      "target_key": "eye_colour"
+    },
+    {
+      "alias": "hair color",
+      "target_type": "dimension",
+      "target_key": "hair_colour"
+    },
+    {
+      "alias": "power",
+      "target_type": "dimension",
+      "target_key": "power_name"
+    },
+    {
+      "alias": "attribute",
+      "target_type": "dimension",
+      "target_key": "attribute_name"
+    }
+  ],
+  "metric_versions": []
+}

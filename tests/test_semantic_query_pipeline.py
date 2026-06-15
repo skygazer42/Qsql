@@ -96,6 +96,56 @@ def _write_catalog(tmp_path: Path, dataset_id: str = "sales") -> Path:
     return semantic_dir
 
 
+def _write_no_time_catalog(tmp_path: Path, dataset_id: str = "heroes") -> Path:
+    semantic_dir = tmp_path / "resources" / "semantic"
+    semantic_dir.mkdir(parents=True, exist_ok=True)
+    catalog_path = semantic_dir / f"{dataset_id}.json"
+    catalog_path.write_text(
+        json.dumps(
+            {
+                "catalog_version": "2026-06-15",
+                "dataset_id": dataset_id,
+                "tables": [
+                    {
+                        "key": "hero_wide",
+                        "label": "英雄宽表",
+                        "physical_table": "heroes",
+                        "description": "无时间维英雄统计宽表"
+                    }
+                ],
+                "metrics": [
+                    {
+                        "key": "hero_count",
+                        "label": "英雄数",
+                        "table_key": "hero_wide",
+                        "field": "hero_id",
+                        "aggregation": "count",
+                        "supported_dimension_keys": ["publisher"]
+                    }
+                ],
+                "dimensions": [
+                    {
+                        "key": "publisher",
+                        "label": "出版社",
+                        "table_key": "hero_wide",
+                        "field": "publisher_name",
+                        "kind": "categorical",
+                        "operators": ["eq", "in"]
+                    }
+                ],
+                "aliases": [
+                    {"alias": "英雄数", "target_type": "metric", "target_key": "hero_count"},
+                    {"alias": "出版社", "target_type": "dimension", "target_key": "publisher"}
+                ],
+                "metric_versions": []
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    return semantic_dir
+
+
 def _valid_draft() -> SemanticQueryDraft:
     return SemanticQueryDraft(
         analysis_type="summary",
@@ -318,6 +368,23 @@ class _MissingTimeParser:
         return draft
 
 
+class _ReadyNoTimeParser:
+    def parse(self, question, catalog, history=None):
+        return SemanticQueryDraft(
+            analysis_type="summary",
+            metric_key="hero_count",
+            group_by_dimension_keys=[],
+            filters=[
+                {
+                    "dimension_key": "publisher",
+                    "operator": "eq",
+                    "value": "Marvel Comics",
+                }
+            ],
+            time_range=None,
+        )
+
+
 def test_semantic_query_service_returns_clarification(tmp_path: Path):
     semantic_dir = _write_catalog(tmp_path)
     service = SemanticQueryService(
@@ -397,6 +464,51 @@ def test_semantic_query_service_returns_execution_plan(tmp_path: Path):
     assert result.status == "ready"
     assert result.execution_plan is not None
     assert "SUM(amount)" in result.execution_plan.sql
+
+
+def test_build_query_execution_plan_supports_no_time_metric(tmp_path: Path):
+    semantic_dir = _write_no_time_catalog(tmp_path)
+    catalog = load_semantic_catalog("heroes", base_dir=semantic_dir)
+
+    plan = build_query_execution_plan(
+        catalog=catalog,
+        semantic_query=SemanticQueryDraft(
+            analysis_type="summary",
+            metric_key="hero_count",
+            group_by_dimension_keys=[],
+            filters=[
+                {
+                    "dimension_key": "publisher",
+                    "operator": "eq",
+                    "value": "Marvel Comics",
+                }
+            ],
+            time_range=None,
+        ),
+    )
+
+    assert plan.table == "heroes"
+    assert "COUNT(*) AS metric_value" in plan.sql
+    assert "publisher_name = 'Marvel Comics'" in plan.sql
+    assert "WHERE publisher_name = 'Marvel Comics'" in plan.sql
+    assert "order_date" not in plan.sql
+
+
+def test_semantic_query_service_returns_ready_for_no_time_metric(tmp_path: Path):
+    semantic_dir = _write_no_time_catalog(tmp_path)
+    service = SemanticQueryService(
+        semantic_base_dir=semantic_dir,
+        parser=_ReadyNoTimeParser(),
+    )
+
+    result = service.prepare_query(
+        SemanticQueryRequest(dataset_id="heroes", question="Marvel Comics 的英雄数是多少")
+    )
+
+    assert result.status == "ready"
+    assert result.execution_plan is not None
+    assert "COUNT(*) AS metric_value" in result.execution_plan.sql
+    assert "publisher_name = 'Marvel Comics'" in result.execution_plan.sql
 
 
 def test_semantic_query_service_returns_stage_timings(tmp_path: Path):

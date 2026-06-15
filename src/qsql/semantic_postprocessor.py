@@ -274,6 +274,39 @@ class SemanticPostprocessor:
         return terms
 
     @staticmethod
+    def _term_spans(question: str, term: str) -> list[tuple[int, int]]:
+        spans: list[tuple[int, int]] = []
+        start = question.find(term)
+        while start != -1:
+            end = start + len(term)
+            spans.append((start, end))
+            start = question.find(term, start + 1)
+        return spans
+
+    @staticmethod
+    def matched_metric_keys(question: str, catalog: SemanticCatalog) -> set[str]:
+        occurrences: list[tuple[str, int, int]] = []
+        for metric_key, terms in SemanticPostprocessor._metric_terms(catalog).items():
+            for term in terms:
+                if not term or not SemanticPostprocessor._is_strong_metric_term(term):
+                    continue
+                for start, end in SemanticPostprocessor._term_spans(question, term):
+                    occurrences.append((metric_key, start, end))
+
+        matched_metric_keys: set[str] = set()
+        for metric_key, start, end in occurrences:
+            if any(
+                other_metric_key != metric_key
+                and other_start <= start
+                and other_end >= end
+                and (other_end - other_start) > (end - start)
+                for other_metric_key, other_start, other_end in occurrences
+            ):
+                continue
+            matched_metric_keys.add(metric_key)
+        return matched_metric_keys
+
+    @staticmethod
     def _is_strong_metric_term(term: str) -> bool:
         normalized = term.strip().lower()
         if not normalized:
@@ -335,15 +368,9 @@ class SemanticPostprocessor:
         catalog: SemanticCatalog,
         semantic_query: SemanticQueryDraft,
     ) -> None:
-        matched_metric_keys: set[str] = set()
-        for metric_key, terms in SemanticPostprocessor._metric_terms(catalog).items():
-            if any(
-                term
-                and term in question
-                and SemanticPostprocessor._is_strong_metric_term(term)
-                for term in terms
-            ):
-                matched_metric_keys.add(metric_key)
+        matched_metric_keys = SemanticPostprocessor.matched_metric_keys(
+            question, catalog
+        )
 
         if len(matched_metric_keys) <= 1:
             return

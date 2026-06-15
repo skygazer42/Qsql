@@ -187,17 +187,9 @@ class SemanticQueryService:
         catalog: SemanticCatalog,
     ) -> list[SemanticClarificationOption]:
         # [CUSTOM] 多指标澄清只认强指标词，避免 accounts/clients 这类实体名把问题误判成多指标。
-        metric_terms = SemanticQueryService._metric_terms(catalog)
-        matched_metric_keys = {
-            metric_key
-            for metric_key, terms in metric_terms.items()
-            if any(
-                term
-                and term in question
-                and SemanticPostprocessor._is_strong_metric_term(term)
-                for term in terms
-            )
-        }
+        matched_metric_keys = SemanticPostprocessor.matched_metric_keys(
+            question, catalog
+        )
         if len(matched_metric_keys) <= 1:
             return []
 
@@ -250,6 +242,22 @@ class SemanticQueryService:
                 value={"preset": "custom_range", "dimension_key": dimension_key},
             ),
         ]
+
+    @staticmethod
+    def _metric_requires_time_range(
+        *,
+        catalog: SemanticCatalog,
+        semantic_query: SemanticQueryDraft,
+    ) -> bool:
+        metric = next(
+            (
+                item
+                for item in catalog.metrics
+                if item.key == semantic_query.metric_key
+            ),
+            None,
+        )
+        return bool(metric and metric.default_time_dimension_key)
 
     def _load_catalog_and_select_candidate(
         self,
@@ -327,7 +335,13 @@ class SemanticQueryService:
                 ),
             )
 
-        if semantic_query.time_range is None:
+        if (
+            semantic_query.time_range is None
+            and self._metric_requires_time_range(
+                catalog=catalog,
+                semantic_query=semantic_query,
+            )
+        ):
             return SemanticParseResponse(
                 dataset_id=request_model.dataset_id,
                 question=request_model.question,

@@ -1,0 +1,91 @@
+{
+  "dataset_id": "bird_superhero",
+  "value_mappings": [
+    {
+      "dimension_key": "publisher_name",
+      "operator": "eq",
+      "terms": {
+        "Marvel Comics": "Marvel Comics",
+        "marvel comics": "Marvel Comics",
+        "DC Comics": "DC Comics",
+        "dc comics": "DC Comics"
+      }
+    },
+    {
+      "dimension_key": "hero_gender",
+      "operator": "eq",
+      "terms": {
+        "Male": "Male",
+        "male": "Male",
+        "Female": "Female",
+        "female": "Female"
+      }
+    },
+    {
+      "dimension_key": "hero_alignment",
+      "operator": "eq",
+      "terms": {
+        "Good": "Good",
+        "good": "Good",
+        "Bad": "Bad",
+        "bad": "Bad"
+      }
+    },
+    {
+      "dimension_key": "hero_race",
+      "operator": "eq",
+      "terms": {
+        "Human": "Human",
+        "human": "Human",
+        "Mutant": "Mutant",
+        "mutant": "Mutant"
+      }
+    },
+    {
+      "dimension_key": "eye_colour",
+      "operator": "eq",
+      "terms": {
+        "Blue": "Blue",
+        "blue": "Blue",
+        "Brown": "Brown",
+        "brown": "Brown",
+        "Gold": "Gold",
+        "gold": "Gold"
+      }
+    },
+    {
+      "dimension_key": "hair_colour",
+      "operator": "eq",
+      "terms": {
+        "Black": "Black",
+        "black": "Black",
+        "Blond": "Blond",
+        "blond": "Blond",
+        "No Colour": "No Colour",
+        "no colour": "No Colour"
+      }
+    },
+    {
+      "dimension_key": "power_name",
+      "operator": "eq",
+      "terms": {
+        "Super Strength": "Super Strength",
+        "super strength": "Super Strength",
+        "Flight": "Flight",
+        "flight": "Flight",
+        "Agility": "Agility",
+        "agility": "Agility"
+      }
+    },
+    {
+      "dimension_key": "attribute_name",
+      "operator": "eq",
+      "terms": {
+        "Intelligence": "Intelligence",
+        "intelligence": "Intelligence",
+        "Strength": "Strength",
+        "strength": "Strength"
+      }
+    }
+  ]
+}

@@ -327,12 +327,14 @@ def build_query_execution_plan(
                 f"{resolved_metric.key}->{resolved_metric.table_key}"
             )
 
-    if semantic_query.time_range is None:
+    if semantic_query.time_range is None and metric.default_time_dimension_key:
         raise ValueError("缺少时间范围，当前仅支持带时间范围的受控查询")
 
-    time_dimension = dimensions.get(semantic_query.time_range.dimension_key)
-    if time_dimension is None:
-        raise ValueError(f"时间维度未定义: {semantic_query.time_range.dimension_key}")
+    time_dimension = None
+    if semantic_query.time_range is not None:
+        time_dimension = dimensions.get(semantic_query.time_range.dimension_key)
+        if time_dimension is None:
+            raise ValueError(f"时间维度未定义: {semantic_query.time_range.dimension_key}")
 
     # [CUSTOM] 受控 SQL 只从正式语义表配置解析物理表名，不再让指标直接散落 table 字段。
     table_definition = tables.get(metric.table_key)
@@ -341,8 +343,6 @@ def build_query_execution_plan(
 
     where_clauses = []
     parameters = []
-
-    time_field = _safe_identifier(time_dimension.field)
 
     if semantic_query.metric_version_key:
         version = versions.get(semantic_query.metric_version_key)
@@ -379,10 +379,11 @@ def build_query_execution_plan(
         resolved_group_dimensions.append(dimension)
 
     required_table_keys = {
-        time_dimension.table_key,
         *(dimension.table_key for dimension in resolved_filter_dimensions),
         *(dimension.table_key for dimension in resolved_group_dimensions),
     }
+    if time_dimension is not None:
+        required_table_keys.add(time_dimension.table_key)
     required_table_keys.discard(metric.table_key)
     join_steps = _plan_join_steps(
         anchor_table_key=metric.table_key,
@@ -396,27 +397,33 @@ def build_query_execution_plan(
         for index, step in enumerate(join_steps, start=1):
             table_aliases[step.to_table_key] = f"t{index}"
 
-    time_field_ref = _field_ref(
-        table_key=time_dimension.table_key,
-        field=time_dimension.field,
-        table_aliases=table_aliases,
-    )
-    where_clauses.append(f"{time_field_ref} >= {_sql_literal(semantic_query.time_range.start)}")
-    parameters.append(
-        QueryParameter(
-            name=time_field,
-            operator="gte",
-            value=semantic_query.time_range.start,
+    if semantic_query.time_range is not None and time_dimension is not None:
+        time_field = _safe_identifier(time_dimension.field)
+        time_field_ref = _field_ref(
+            table_key=time_dimension.table_key,
+            field=time_dimension.field,
+            table_aliases=table_aliases,
         )
-    )
-    where_clauses.append(f"{time_field_ref} <= {_sql_literal(semantic_query.time_range.end)}")
-    parameters.append(
-        QueryParameter(
-            name=time_field,
-            operator="lte",
-            value=semantic_query.time_range.end,
+        where_clauses.append(
+            f"{time_field_ref} >= {_sql_literal(semantic_query.time_range.start)}"
         )
-    )
+        parameters.append(
+            QueryParameter(
+                name=time_field,
+                operator="gte",
+                value=semantic_query.time_range.start,
+            )
+        )
+        where_clauses.append(
+            f"{time_field_ref} <= {_sql_literal(semantic_query.time_range.end)}"
+        )
+        parameters.append(
+            QueryParameter(
+                name=time_field,
+                operator="lte",
+                value=semantic_query.time_range.end,
+            )
+        )
 
     for filter_obj, filter_dimension in zip(semantic_filters, resolved_filter_dimensions):
         filter_sql, parameter = _render_filter(
@@ -444,6 +451,8 @@ def build_query_execution_plan(
         )
         select_dimensions.append(f"{field_ref} AS {dimension.key}")
         group_dimensions.append(field_ref)
+        # [CUSTOM] group by 维度默认排除 NULL 桶，避免语义分组把缺失外键聚成一组噪音结果。
+        where_clauses.append(f"{field_ref} IS NOT NULL")
 
     metric_select_parts = []
     for resolved_metric in resolved_metrics:

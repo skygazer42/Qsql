@@ -382,6 +382,60 @@ def test_postprocessor_keeps_explicit_multi_metric_draft_ready():
     assert repaired.metric_keys == ["amount", "quantity"]
 
 
+def test_postprocessor_does_not_treat_overlapping_metric_terms_as_multi_metric():
+    catalog = _catalog()
+    catalog.metrics[0] = catalog.metrics[0].model_copy(
+        update={"key": "hero_count", "label": "hero count", "field": "hero_count"}
+    )
+    catalog.metrics.append(
+        catalog.metrics[0].model_copy(
+            update={
+                "key": "powered_hero_count",
+                "label": "powered hero count",
+                "field": "powered_hero_count",
+            }
+        )
+    )
+    catalog.aliases[0] = catalog.aliases[0].model_copy(
+        update={
+            "alias": "hero count",
+            "target_type": "metric",
+            "target_key": "hero_count",
+        }
+    )
+    catalog.aliases.append(
+        catalog.aliases[0].model_copy(
+            update={
+                "alias": "powered hero count",
+                "target_type": "metric",
+                "target_key": "powered_hero_count",
+            }
+        )
+    )
+    postprocessor = SemanticPostprocessor(plugin_base_dir=Path("/missing"))
+    query = SemanticQueryDraft(
+        analysis_type="summary",
+        metric_key="powered_hero_count",
+        metric_keys=["powered_hero_count"],
+        group_by_dimension_keys=[],
+        filters=[],
+        time_range=SemanticTimeRange(
+            dimension_key="order_date",
+            start="2026-01-01",
+            end="2026-12-31",
+        ),
+    )
+
+    repaired = postprocessor.repair(
+        question="Show powered hero count by publisher.",
+        catalog=catalog,
+        semantic_query=query,
+    )
+
+    assert repaired.needs_clarification is False
+    assert repaired.clarification_question is None
+
+
 def test_postprocessor_loads_dataset_value_mapping_plugin(tmp_path: Path):
     plugin_dir = tmp_path / "plugins"
     plugin_dir.mkdir()

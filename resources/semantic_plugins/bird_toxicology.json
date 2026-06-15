@@ -1,0 +1,86 @@
+{
+  "dataset_id": "bird_toxicology",
+  "value_mappings": [
+    {
+      "dimension_key": "molecule_label",
+      "operator": "eq",
+      "terms": {
+        "positive": "+",
+        "Positive": "+",
+        "positive molecules": "+",
+        "negative": "-",
+        "Negative": "-",
+        "negative molecules": "-"
+      }
+    },
+    {
+      "dimension_key": "bond_type",
+      "operator": "eq",
+      "terms": {
+        "single bond": "-",
+        "Single bond": "-",
+        "single bonds": "-",
+        "double bond": "=",
+        "Double bond": "=",
+        "double bonds": "=",
+        "triple bond": "#",
+        "Triple bond": "#",
+        "triple bonds": "#"
+      }
+    },
+    {
+      "dimension_key": "atom_element",
+      "operator": "eq",
+      "terms": {
+        "carbon": "c",
+        "Carbon": "c",
+        "hydrogen": "h",
+        "Hydrogen": "h",
+        "oxygen": "o",
+        "Oxygen": "o",
+        "nitrogen": "n",
+        "Nitrogen": "n",
+        "chlorine": "cl",
+        "Chlorine": "cl",
+        "bromine": "br",
+        "Bromine": "br"
+      }
+    },
+    {
+      "dimension_key": "atom_source_element",
+      "operator": "eq",
+      "terms": {
+        "carbon": "c",
+        "Carbon": "c",
+        "hydrogen": "h",
+        "Hydrogen": "h",
+        "oxygen": "o",
+        "Oxygen": "o",
+        "nitrogen": "n",
+        "Nitrogen": "n",
+        "chlorine": "cl",
+        "Chlorine": "cl",
+        "bromine": "br",
+        "Bromine": "br"
+      }
+    },
+    {
+      "dimension_key": "atom_target_element",
+      "operator": "eq",
+      "terms": {
+        "carbon": "c",
+        "Carbon": "c",
+        "hydrogen": "h",
+        "Hydrogen": "h",
+        "oxygen": "o",
+        "Oxygen": "o",
+        "nitrogen": "n",
+        "Nitrogen": "n",
+        "chlorine": "cl",
+        "Chlorine": "cl",
+        "bromine": "br",
+        "Bromine": "br"
+      }
+    }
+  ]
+}

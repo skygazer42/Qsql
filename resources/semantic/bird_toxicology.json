@@ -1,0 +1,311 @@
+{
+  "catalog_version": "2026-06-15",
+  "dataset_id": "bird_toxicology",
+  "tables": [
+    {
+      "key": "molecule_dim",
+      "label": "分子维表",
+      "physical_table": "molecule",
+      "description": "分子标签"
+    },
+    {
+      "key": "atom_fact",
+      "label": "原子事实表",
+      "physical_table": "atom",
+      "description": "原子元素与所属分子"
+    },
+    {
+      "key": "bond_fact",
+      "label": "键事实表",
+      "physical_table": "bond",
+      "description": "键类型与所属分子"
+    },
+    {
+      "key": "connected_fact",
+      "label": "连接事实表",
+      "physical_table": "connected",
+      "description": "原子连接边"
+    },
+    {
+      "key": "atom_source_dim",
+      "label": "起点原子维表",
+      "physical_table": "atom",
+      "description": "连接起点原子"
+    },
+    {
+      "key": "atom_target_dim",
+      "label": "终点原子维表",
+      "physical_table": "atom",
+      "description": "连接终点原子"
+    }
+  ],
+  "entities": [
+    {
+      "key": "molecule_id",
+      "table_key": "molecule_dim",
+      "field": "molecule_id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "bond_id",
+      "table_key": "bond_fact",
+      "field": "bond_id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "atom_source_id",
+      "table_key": "atom_source_dim",
+      "field": "atom_id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "atom_target_id",
+      "table_key": "atom_target_dim",
+      "field": "atom_id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "atom_fact_molecule_id",
+      "table_key": "atom_fact",
+      "field": "molecule_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "bond_fact_molecule_id",
+      "table_key": "bond_fact",
+      "field": "molecule_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "connected_bond_id",
+      "table_key": "connected_fact",
+      "field": "bond_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "connected_atom_source_id",
+      "table_key": "connected_fact",
+      "field": "atom_id",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "connected_atom_target_id",
+      "table_key": "connected_fact",
+      "field": "atom_id2",
+      "entity_type": "foreign"
+    }
+  ],
+  "relationships": [
+    {
+      "key": "atom_to_molecule",
+      "left_entity_key": "atom_fact_molecule_id",
+      "right_entity_key": "molecule_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "bond_to_molecule",
+      "left_entity_key": "bond_fact_molecule_id",
+      "right_entity_key": "molecule_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "connected_to_bond",
+      "left_entity_key": "connected_bond_id",
+      "right_entity_key": "bond_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "connected_to_atom_source",
+      "left_entity_key": "connected_atom_source_id",
+      "right_entity_key": "atom_source_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "connected_to_atom_target",
+      "left_entity_key": "connected_atom_target_id",
+      "right_entity_key": "atom_target_id",
+      "join_type": "left",
+      "allowed": true
+    }
+  ],
+  "metrics": [
+    {
+      "key": "molecule_count",
+      "label": "分子数",
+      "table_key": "molecule_dim",
+      "field": "molecule_id",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "molecule_label"
+      ]
+    },
+    {
+      "key": "atom_count",
+      "label": "原子数",
+      "table_key": "atom_fact",
+      "field": "atom_id",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "molecule_label",
+        "atom_element"
+      ]
+    },
+    {
+      "key": "atom_molecule_count",
+      "label": "原子对应分子数",
+      "table_key": "atom_fact",
+      "field": "molecule_id",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "molecule_label",
+        "atom_element"
+      ]
+    },
+    {
+      "key": "bond_count",
+      "label": "键数",
+      "table_key": "bond_fact",
+      "field": "bond_id",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "molecule_label",
+        "bond_type"
+      ]
+    },
+    {
+      "key": "connected_bond_count",
+      "label": "连接键数",
+      "table_key": "connected_fact",
+      "field": "bond_id",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "molecule_label",
+        "bond_type",
+        "atom_source_element",
+        "atom_target_element"
+      ]
+    },
+    {
+      "key": "connected_source_atom_count",
+      "label": "连接起点原子数",
+      "table_key": "connected_fact",
+      "field": "atom_id",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "molecule_label",
+        "bond_type",
+        "atom_source_element",
+        "atom_target_element"
+      ]
+    }
+  ],
+  "dimensions": [
+    {
+      "key": "molecule_label",
+      "label": "分子标签",
+      "table_key": "molecule_dim",
+      "field": "label",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "atom_element",
+      "label": "原子元素",
+      "table_key": "atom_fact",
+      "field": "element",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "bond_type",
+      "label": "键类型",
+      "table_key": "bond_fact",
+      "field": "bond_type",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "atom_source_element",
+      "label": "起点原子元素",
+      "table_key": "atom_source_dim",
+      "field": "element",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "atom_target_element",
+      "label": "终点原子元素",
+      "table_key": "atom_target_dim",
+      "field": "element",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    }
+  ],
+  "aliases": [
+    {
+      "alias": "molecule count",
+      "target_type": "metric",
+      "target_key": "molecule_count"
+    },
+    {
+      "alias": "atom count",
+      "target_type": "metric",
+      "target_key": "atom_count"
+    },
+    {
+      "alias": "bond count",
+      "target_type": "metric",
+      "target_key": "bond_count"
+    },
+    {
+      "alias": "connected bond count",
+      "target_type": "metric",
+      "target_key": "connected_bond_count"
+    },
+    {
+      "alias": "source atom count",
+      "target_type": "metric",
+      "target_key": "connected_source_atom_count"
+    },
+    {
+      "alias": "distinct molecule count",
+      "target_type": "metric",
+      "target_key": "atom_molecule_count"
+    },
+    {
+      "alias": "connection count",
+      "target_type": "metric",
+      "target_key": "connected_bond_count"
+    },
+    {
+      "alias": "molecule label",
+      "target_type": "dimension",
+      "target_key": "molecule_label"
+    },
+    {
+      "alias": "atom element",
+      "target_type": "dimension",
+      "target_key": "atom_element"
+    },
+    {
+      "alias": "bond type",
+      "target_type": "dimension",
+      "target_key": "bond_type"
+    },
+    {
+      "alias": "source atom",
+      "target_type": "dimension",
+      "target_key": "atom_source_element"
+    },
+    {
+      "alias": "target atom",
+      "target_type": "dimension",
+      "target_key": "atom_target_element"
+    }
+  ],
+  "metric_versions": []
+}

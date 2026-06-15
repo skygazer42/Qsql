@@ -1,0 +1,507 @@
+{
+  "catalog_version": "2026-06-15",
+  "dataset_id": "bird_codebase_community",
+  "tables": [
+    {
+      "key": "badge_fact",
+      "label": "徽章事实表",
+      "physical_table": "badges",
+      "description": "用户获徽章记录",
+      "default_time_dimension_key": "badge_date"
+    },
+    {
+      "key": "badge_user",
+      "label": "徽章用户维表",
+      "physical_table": "users",
+      "description": "获徽章用户信息"
+    },
+    {
+      "key": "post_fact",
+      "label": "帖子事实表",
+      "physical_table": "posts",
+      "description": "帖子与答案记录",
+      "default_time_dimension_key": "post_creation_date"
+    },
+    {
+      "key": "owner_user",
+      "label": "帖子作者维表",
+      "physical_table": "users",
+      "description": "帖子作者信息"
+    },
+    {
+      "key": "comment_fact",
+      "label": "评论事实表",
+      "physical_table": "comments",
+      "description": "评论记录",
+      "default_time_dimension_key": "comment_creation_date"
+    },
+    {
+      "key": "comment_post",
+      "label": "评论对应帖子维表",
+      "physical_table": "posts",
+      "description": "评论对应的帖子信息"
+    },
+    {
+      "key": "commenter_user",
+      "label": "评论用户维表",
+      "physical_table": "users",
+      "description": "发表评论的用户信息"
+    },
+    {
+      "key": "vote_fact",
+      "label": "投票事实表",
+      "physical_table": "votes",
+      "description": "帖子投票记录",
+      "default_time_dimension_key": "vote_creation_date"
+    },
+    {
+      "key": "vote_post",
+      "label": "投票对应帖子维表",
+      "physical_table": "posts",
+      "description": "被投票的帖子信息"
+    }
+  ],
+  "entities": [
+    {
+      "key": "badge_fact_id",
+      "table_key": "badge_fact",
+      "field": "Id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "badge_user_id",
+      "table_key": "badge_user",
+      "field": "Id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "post_fact_id",
+      "table_key": "post_fact",
+      "field": "Id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "owner_user_id",
+      "table_key": "owner_user",
+      "field": "Id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "comment_fact_id",
+      "table_key": "comment_fact",
+      "field": "Id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "comment_post_id",
+      "table_key": "comment_post",
+      "field": "Id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "commenter_user_id",
+      "table_key": "commenter_user",
+      "field": "Id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "vote_fact_id",
+      "table_key": "vote_fact",
+      "field": "Id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "vote_post_id",
+      "table_key": "vote_post",
+      "field": "Id",
+      "entity_type": "primary"
+    },
+    {
+      "key": "badge_fact_user_id",
+      "table_key": "badge_fact",
+      "field": "UserId",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "post_fact_owner_user_id",
+      "table_key": "post_fact",
+      "field": "OwnerUserId",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "comment_fact_post_id",
+      "table_key": "comment_fact",
+      "field": "PostId",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "comment_fact_user_id",
+      "table_key": "comment_fact",
+      "field": "UserId",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "comment_post_owner_user_id",
+      "table_key": "comment_post",
+      "field": "OwnerUserId",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "vote_fact_post_id",
+      "table_key": "vote_fact",
+      "field": "PostId",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "vote_post_owner_user_id",
+      "table_key": "vote_post",
+      "field": "OwnerUserId",
+      "entity_type": "foreign"
+    }
+  ],
+  "relationships": [
+    {
+      "key": "badge_to_user",
+      "left_entity_key": "badge_fact_user_id",
+      "right_entity_key": "badge_user_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "post_to_owner_user",
+      "left_entity_key": "post_fact_owner_user_id",
+      "right_entity_key": "owner_user_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "comment_to_post",
+      "left_entity_key": "comment_fact_post_id",
+      "right_entity_key": "comment_post_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "comment_to_commenter",
+      "left_entity_key": "comment_fact_user_id",
+      "right_entity_key": "commenter_user_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "comment_post_to_owner_user",
+      "left_entity_key": "comment_post_owner_user_id",
+      "right_entity_key": "owner_user_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "vote_to_post",
+      "left_entity_key": "vote_fact_post_id",
+      "right_entity_key": "vote_post_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "vote_post_to_owner_user",
+      "left_entity_key": "vote_post_owner_user_id",
+      "right_entity_key": "owner_user_id",
+      "join_type": "left",
+      "allowed": true
+    }
+  ],
+  "metrics": [
+    {
+      "key": "badge_count",
+      "label": "徽章数",
+      "table_key": "badge_fact",
+      "field": "Id",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "badge_date",
+        "badge_name",
+        "badge_user_location"
+      ],
+      "default_time_dimension_key": "badge_date"
+    },
+    {
+      "key": "post_count",
+      "label": "帖子数",
+      "table_key": "post_fact",
+      "field": "Id",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "post_creation_date",
+        "post_type_id",
+        "owner_user_location"
+      ],
+      "default_time_dimension_key": "post_creation_date"
+    },
+    {
+      "key": "post_score_total",
+      "label": "帖子分数合计",
+      "table_key": "post_fact",
+      "field": "Score",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "post_creation_date",
+        "post_type_id",
+        "owner_user_location"
+      ],
+      "default_time_dimension_key": "post_creation_date"
+    },
+    {
+      "key": "comment_count",
+      "label": "评论数",
+      "table_key": "comment_fact",
+      "field": "Id",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "comment_creation_date",
+        "comment_post_type_id",
+        "commenter_location",
+        "owner_user_location"
+      ],
+      "default_time_dimension_key": "comment_creation_date"
+    },
+    {
+      "key": "comment_score_total",
+      "label": "评论分数合计",
+      "table_key": "comment_fact",
+      "field": "Score",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "comment_creation_date",
+        "comment_post_type_id",
+        "commenter_location",
+        "owner_user_location"
+      ],
+      "default_time_dimension_key": "comment_creation_date"
+    },
+    {
+      "key": "vote_count",
+      "label": "投票数",
+      "table_key": "vote_fact",
+      "field": "Id",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "vote_creation_date",
+        "vote_post_type_id",
+        "vote_type_id",
+        "owner_user_location"
+      ],
+      "default_time_dimension_key": "vote_creation_date"
+    }
+  ],
+  "dimensions": [
+    {
+      "key": "badge_date",
+      "label": "徽章日期",
+      "table_key": "badge_fact",
+      "field": "Date",
+      "kind": "time",
+      "operators": [
+        "gte",
+        "lte",
+        "between"
+      ]
+    },
+    {
+      "key": "badge_name",
+      "label": "徽章名称",
+      "table_key": "badge_fact",
+      "field": "Name",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "badge_user_location",
+      "label": "用户地点",
+      "table_key": "badge_user",
+      "field": "Location",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "post_creation_date",
+      "label": "帖子创建时间",
+      "table_key": "post_fact",
+      "field": "CreaionDate",
+      "kind": "time",
+      "operators": [
+        "gte",
+        "lte",
+        "between"
+      ]
+    },
+    {
+      "key": "post_type_id",
+      "label": "帖子类型",
+      "table_key": "post_fact",
+      "field": "PostTypeId",
+      "kind": "number",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "owner_user_location",
+      "label": "作者地点",
+      "table_key": "owner_user",
+      "field": "Location",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "comment_creation_date",
+      "label": "评论时间",
+      "table_key": "comment_fact",
+      "field": "CreationDate",
+      "kind": "time",
+      "operators": [
+        "gte",
+        "lte",
+        "between"
+      ]
+    },
+    {
+      "key": "comment_post_type_id",
+      "label": "评论对应帖子类型",
+      "table_key": "comment_post",
+      "field": "PostTypeId",
+      "kind": "number",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "commenter_location",
+      "label": "评论用户地点",
+      "table_key": "commenter_user",
+      "field": "Location",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "vote_creation_date",
+      "label": "投票时间",
+      "table_key": "vote_fact",
+      "field": "CreationDate",
+      "kind": "time",
+      "operators": [
+        "gte",
+        "lte",
+        "between"
+      ]
+    },
+    {
+      "key": "vote_post_type_id",
+      "label": "被投票帖子类型",
+      "table_key": "vote_post",
+      "field": "PostTypeId",
+      "kind": "number",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "vote_type_id",
+      "label": "投票类型",
+      "table_key": "vote_fact",
+      "field": "VoteTypeId",
+      "kind": "number",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    }
+  ],
+  "aliases": [
+    {
+      "alias": "badge count",
+      "target_type": "metric",
+      "target_key": "badge_count"
+    },
+    {
+      "alias": "post count",
+      "target_type": "metric",
+      "target_key": "post_count"
+    },
+    {
+      "alias": "total post score",
+      "target_type": "metric",
+      "target_key": "post_score_total"
+    },
+    {
+      "alias": "comment count",
+      "target_type": "metric",
+      "target_key": "comment_count"
+    },
+    {
+      "alias": "total comment score",
+      "target_type": "metric",
+      "target_key": "comment_score_total"
+    },
+    {
+      "alias": "vote count",
+      "target_type": "metric",
+      "target_key": "vote_count"
+    },
+    {
+      "alias": "badge name",
+      "target_type": "dimension",
+      "target_key": "badge_name"
+    },
+    {
+      "alias": "user location",
+      "target_type": "dimension",
+      "target_key": "badge_user_location"
+    },
+    {
+      "alias": "post type",
+      "target_type": "dimension",
+      "target_key": "post_type_id"
+    },
+    {
+      "alias": "owner location",
+      "target_type": "dimension",
+      "target_key": "owner_user_location"
+    },
+    {
+      "alias": "commented post type",
+      "target_type": "dimension",
+      "target_key": "comment_post_type_id"
+    },
+    {
+      "alias": "commenter location",
+      "target_type": "dimension",
+      "target_key": "commenter_location"
+    },
+    {
+      "alias": "voted post type",
+      "target_type": "dimension",
+      "target_key": "vote_post_type_id"
+    },
+    {
+      "alias": "vote type",
+      "target_type": "dimension",
+      "target_key": "vote_type_id"
+    }
+  ],
+  "metric_versions": []
+}

@@ -1,0 +1,49 @@
+{
+  "dataset_id": "bird_codebase_community",
+  "value_mappings": [
+    {
+      "dimension_key": "badge_name",
+      "operator": "eq",
+      "terms": {
+        "Teacher": "Teacher",
+        "teacher": "Teacher",
+        "Student": "Student",
+        "student": "Student",
+        "Supporter": "Supporter",
+        "supporter": "Supporter",
+        "Editor": "Editor",
+        "editor": "Editor"
+      }
+    },
+    {
+      "dimension_key": "post_type_id",
+      "operator": "eq",
+      "terms": {
+        "question": 1,
+        "questions": 1,
+        "answer": 2,
+        "answers": 2
+      }
+    },
+    {
+      "dimension_key": "comment_post_type_id",
+      "operator": "eq",
+      "terms": {
+        "question": 1,
+        "questions": 1,
+        "answer": 2,
+        "answers": 2
+      }
+    },
+    {
+      "dimension_key": "vote_post_type_id",
+      "operator": "eq",
+      "terms": {
+        "question": 1,
+        "questions": 1,
+        "answer": 2,
+        "answers": 2
+      }
+    }
+  ]
+}

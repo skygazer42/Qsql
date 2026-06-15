@@ -259,18 +259,20 @@
 
 ### 2026-06-15 BIRD 多表 harder 子集评测已落地
 
-- 已新增四套 BIRD Mini-Dev 多表 BI 子集语义目录、plugin、few-shot 示例与 EX 评测集：
+- 已新增五套 BIRD Mini-Dev 多表 BI 子集语义目录、plugin、few-shot 示例与 EX 评测集：
   - `bird_debit_card_specializing`
   - `bird_student_club`
   - `bird_financial`
   - `bird_formula_1`
+  - `bird_codebase_community`
 - 当前代码下的真实 SQLite EX 结果：
   - `bird_debit_card_specializing`：`12/12`，`repeat=3 -> 36/36`
   - `bird_student_club`：`12/12`，`repeat=3 -> 36/36`
-  - `bird_financial`：`12/12`，`repeat=3 -> 36/36`
+- `bird_financial`：`12/12`，`repeat=3 -> 36/36`
 - `bird_formula_1`：`12/12`，`repeat=3 -> 36/36`
-- 四套 harder 子集合计：
-  - 单轮 `48/48 = 100%`
-  - `repeat=3` 累计 `144/144 = 100%`
+- `bird_codebase_community`：`12/12`，`repeat=3 -> 36/36`
+- 五套 harder 子集合计：
+  - 单轮 `60/60 = 100%`
+  - `repeat=3` 累计 `180/180 = 100%`
   - `stability_rate=1.0000`
 - 这组结果证明当前底座在**受控多表 BI 问数**场景下已经稳定，但**不能外推为 full BIRD / 开放域 arbitrary SQL 的整体准确率**。

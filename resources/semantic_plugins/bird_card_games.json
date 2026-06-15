@@ -1,0 +1,122 @@
+{
+  "dataset_id": "bird_card_games",
+  "value_mappings": [
+    {
+      "dimension_key": "legality_status",
+      "operator": "eq",
+      "terms": {
+        "banned": "Banned",
+        "Banned": "Banned",
+        "banned cards": "Banned",
+        "legal": "Legal",
+        "Legal": "Legal",
+        "legal cards": "Legal",
+        "restricted": "Restricted",
+        "Restricted": "Restricted"
+      }
+    },
+    {
+      "dimension_key": "legality_format",
+      "operator": "eq",
+      "terms": {
+        "commander": "commander",
+        "Commander": "commander",
+        "commander format": "commander",
+        "premodern": "premodern",
+        "Premodern": "premodern",
+        "vintage": "vintage",
+        "Vintage": "vintage",
+        "gladiator": "gladiator",
+        "Gladiator": "gladiator"
+      }
+    },
+    {
+      "dimension_key": "foreign_language",
+      "operator": "eq",
+      "terms": {
+        "French": "French",
+        "french": "French",
+        "German": "German",
+        "german": "German",
+        "Italian": "Italian",
+        "italian": "Italian",
+        "Portuguese (Brazil)": "Portuguese (Brazil)",
+        "Brazilian Portuguese": "Portuguese (Brazil)"
+      }
+    },
+    {
+      "dimension_key": "translation_language",
+      "operator": "eq",
+      "terms": {
+        "French": "French",
+        "french": "French",
+        "German": "German",
+        "german": "German",
+        "Italian": "Italian",
+        "italian": "Italian",
+        "Portuguese (Brazil)": "Portuguese (Brazil)",
+        "Brazilian Portuguese": "Portuguese (Brazil)",
+        "Chinese Simplified": "Chinese Simplified",
+        "Korean": "Korean"
+      }
+    },
+    {
+      "dimension_key": "set_block",
+      "operator": "eq",
+      "terms": {
+        "Commander": "Commander",
+        "commander": "Commander",
+        "commander block": "Commander",
+        "Ravnica": "Ravnica",
+        "ravnica": "Ravnica",
+        "ravnica block": "Ravnica"
+      }
+    },
+    {
+      "dimension_key": "set_name",
+      "operator": "eq",
+      "terms": {
+        "Coldsnap": "Coldsnap",
+        "Hour of Devastation": "Hour of Devastation"
+      }
+    },
+    {
+      "dimension_key": "card_rarity",
+      "operator": "eq",
+      "terms": {
+        "mythic": "mythic",
+        "Mythic": "mythic",
+        "mythic rare": "mythic"
+      }
+    },
+    {
+      "dimension_key": "card_border_color",
+      "operator": "eq",
+      "terms": {
+        "white border": "white",
+        "White border": "white",
+        "black border": "black",
+        "Black border": "black",
+        "borderless": "borderless"
+      }
+    },
+    {
+      "dimension_key": "story_spotlight_flag",
+      "operator": "eq",
+      "terms": {
+        "Story Spotlight": 1,
+        "story spotlight": 1,
+        "story spotlight cards": 1
+      }
+    },
+    {
+      "dimension_key": "promo_flag",
+      "operator": "eq",
+      "terms": {
+        "promo": 1,
+        "Promo": 1,
+        "promo cards": 1
+      }
+    }
+  ]
+}

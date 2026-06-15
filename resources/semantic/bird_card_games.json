@@ -1,0 +1,396 @@
+{
+  "catalog_version": "2026-06-15",
+  "dataset_id": "bird_card_games",
+  "tables": [
+    {
+      "key": "cards_fact",
+      "label": "卡牌事实表",
+      "physical_table": "cards",
+      "description": "卡牌基础属性与所属系列"
+    },
+    {
+      "key": "foreign_data_fact",
+      "label": "外语卡牌事实表",
+      "physical_table": "foreign_data",
+      "description": "卡牌外语名称与语言信息"
+    },
+    {
+      "key": "legalities_fact",
+      "label": "赛制合法性事实表",
+      "physical_table": "legalities",
+      "description": "卡牌在不同赛制中的合法性状态"
+    },
+    {
+      "key": "rulings_fact",
+      "label": "裁定事实表",
+      "physical_table": "rulings",
+      "description": "卡牌裁定记录"
+    },
+    {
+      "key": "sets_dim",
+      "label": "系列维表",
+      "physical_table": "sets",
+      "description": "系列名称、所属 block 与基础卡池规模"
+    },
+    {
+      "key": "set_translations_fact",
+      "label": "系列翻译事实表",
+      "physical_table": "set_translations",
+      "description": "系列翻译语言与译名"
+    }
+  ],
+  "entities": [
+    {
+      "key": "card_uuid",
+      "table_key": "cards_fact",
+      "field": "uuid",
+      "entity_type": "primary"
+    },
+    {
+      "key": "card_set_code",
+      "table_key": "cards_fact",
+      "field": "setCode",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "foreign_card_uuid",
+      "table_key": "foreign_data_fact",
+      "field": "uuid",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "legality_card_uuid",
+      "table_key": "legalities_fact",
+      "field": "uuid",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "ruling_card_uuid",
+      "table_key": "rulings_fact",
+      "field": "uuid",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "set_code",
+      "table_key": "sets_dim",
+      "field": "code",
+      "entity_type": "primary"
+    },
+    {
+      "key": "translation_set_code",
+      "table_key": "set_translations_fact",
+      "field": "setCode",
+      "entity_type": "foreign"
+    }
+  ],
+  "relationships": [
+    {
+      "key": "foreign_to_card",
+      "left_entity_key": "foreign_card_uuid",
+      "right_entity_key": "card_uuid",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "legality_to_card",
+      "left_entity_key": "legality_card_uuid",
+      "right_entity_key": "card_uuid",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "ruling_to_card",
+      "left_entity_key": "ruling_card_uuid",
+      "right_entity_key": "card_uuid",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "card_to_set",
+      "left_entity_key": "card_set_code",
+      "right_entity_key": "set_code",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "translation_to_set",
+      "left_entity_key": "translation_set_code",
+      "right_entity_key": "set_code",
+      "join_type": "left",
+      "allowed": true
+    }
+  ],
+  "metrics": [
+    {
+      "key": "card_count",
+      "label": "卡牌数",
+      "table_key": "cards_fact",
+      "field": "id",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "card_rarity",
+        "card_border_color",
+        "set_name",
+        "set_block",
+        "story_spotlight_flag"
+      ]
+    },
+    {
+      "key": "converted_mana_cost_avg",
+      "label": "平均法力值",
+      "table_key": "cards_fact",
+      "field": "convertedManaCost",
+      "aggregation": "avg",
+      "supported_dimension_keys": [
+        "card_rarity",
+        "card_border_color",
+        "set_name",
+        "set_block",
+        "story_spotlight_flag"
+      ]
+    },
+    {
+      "key": "translated_card_count",
+      "label": "外语卡牌数",
+      "table_key": "foreign_data_fact",
+      "field": "uuid",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "set_name",
+        "set_block",
+        "foreign_language",
+        "card_rarity",
+        "card_border_color",
+        "story_spotlight_flag"
+      ]
+    },
+    {
+      "key": "translated_set_count",
+      "label": "已翻译系列数",
+      "table_key": "set_translations_fact",
+      "field": "setCode",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "set_name",
+        "set_block",
+        "translation_language"
+      ]
+    },
+    {
+      "key": "legal_card_count",
+      "label": "合法性卡牌数",
+      "table_key": "legalities_fact",
+      "field": "uuid",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "legality_format",
+        "legality_status",
+        "set_name",
+        "set_block",
+        "card_rarity",
+        "card_border_color"
+      ]
+    },
+    {
+      "key": "ruling_count",
+      "label": "裁定数",
+      "table_key": "rulings_fact",
+      "field": "id",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "set_name",
+        "set_block",
+        "promo_flag",
+        "card_border_color"
+      ]
+    },
+    {
+      "key": "ruled_card_count",
+      "label": "有裁定卡牌数",
+      "table_key": "rulings_fact",
+      "field": "uuid",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "set_name",
+        "set_block",
+        "promo_flag",
+        "card_border_color"
+      ]
+    }
+  ],
+  "dimensions": [
+    {
+      "key": "card_rarity",
+      "label": "卡牌稀有度",
+      "table_key": "cards_fact",
+      "field": "rarity",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "card_border_color",
+      "label": "边框颜色",
+      "table_key": "cards_fact",
+      "field": "borderColor",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "legality_format",
+      "label": "赛制",
+      "table_key": "legalities_fact",
+      "field": "format",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "legality_status",
+      "label": "合法性状态",
+      "table_key": "legalities_fact",
+      "field": "status",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "foreign_language",
+      "label": "卡牌语言",
+      "table_key": "foreign_data_fact",
+      "field": "language",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "set_name",
+      "label": "系列名称",
+      "table_key": "sets_dim",
+      "field": "name",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "set_block",
+      "label": "系列 block",
+      "table_key": "sets_dim",
+      "field": "block",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "translation_language",
+      "label": "系列翻译语言",
+      "table_key": "set_translations_fact",
+      "field": "language",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "story_spotlight_flag",
+      "label": "是否 Story Spotlight",
+      "table_key": "cards_fact",
+      "field": "isStorySpotlight",
+      "kind": "number",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "promo_flag",
+      "label": "是否促销卡",
+      "table_key": "cards_fact",
+      "field": "isPromo",
+      "kind": "number",
+      "operators": ["eq", "in"]
+    }
+  ],
+  "aliases": [
+    {
+      "alias": "card count",
+      "target_type": "metric",
+      "target_key": "card_count"
+    },
+    {
+      "alias": "average converted mana cost",
+      "target_type": "metric",
+      "target_key": "converted_mana_cost_avg"
+    },
+    {
+      "alias": "average mana cost",
+      "target_type": "metric",
+      "target_key": "converted_mana_cost_avg"
+    },
+    {
+      "alias": "translated card count",
+      "target_type": "metric",
+      "target_key": "translated_card_count"
+    },
+    {
+      "alias": "translated set count",
+      "target_type": "metric",
+      "target_key": "translated_set_count"
+    },
+    {
+      "alias": "legal card count",
+      "target_type": "metric",
+      "target_key": "legal_card_count"
+    },
+    {
+      "alias": "ruling count",
+      "target_type": "metric",
+      "target_key": "ruling_count"
+    },
+    {
+      "alias": "ruled card count",
+      "target_type": "metric",
+      "target_key": "ruled_card_count"
+    },
+    {
+      "alias": "card rarity",
+      "target_type": "dimension",
+      "target_key": "card_rarity"
+    },
+    {
+      "alias": "border color",
+      "target_type": "dimension",
+      "target_key": "card_border_color"
+    },
+    {
+      "alias": "format",
+      "target_type": "dimension",
+      "target_key": "legality_format"
+    },
+    {
+      "alias": "legality status",
+      "target_type": "dimension",
+      "target_key": "legality_status"
+    },
+    {
+      "alias": "card language",
+      "target_type": "dimension",
+      "target_key": "foreign_language"
+    },
+    {
+      "alias": "set name",
+      "target_type": "dimension",
+      "target_key": "set_name"
+    },
+    {
+      "alias": "set block",
+      "target_type": "dimension",
+      "target_key": "set_block"
+    },
+    {
+      "alias": "translation language",
+      "target_type": "dimension",
+      "target_key": "translation_language"
+    },
+    {
+      "alias": "story spotlight",
+      "target_type": "dimension",
+      "target_key": "story_spotlight_flag"
+    },
+    {
+      "alias": "promo",
+      "target_type": "dimension",
+      "target_key": "promo_flag"
+    }
+  ],
+  "metric_versions": []
+}

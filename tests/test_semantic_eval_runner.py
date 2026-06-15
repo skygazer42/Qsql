@@ -7,6 +7,7 @@ from src.qsql.schemas import (
 from scripts.semantic_eval_runner import (
     EvalCase,
     EvalResult,
+    _fetch_rows,
     evaluate_case,
     run_evaluation,
     summarize_consistency,
@@ -86,6 +87,51 @@ def test_evaluate_case_flags_semantic_mismatch():
     assert result.failure_reason == "metric_mismatch"
 
 
+def test_evaluate_case_checks_expected_metric_keys():
+    case = EvalCase(
+        id="revenue_quantity_summary",
+        question="2011年销售额和销量是多少？",
+        expect_status="ready",
+        expect_metric_key="revenue",
+        expect_metric_keys=["revenue", "quantity"],
+        expect_group_by=[],
+    )
+    response = SemanticParseResponse(
+        dataset_id="online_retail",
+        question=case.question,
+        status="ready",
+        semantic_query=SemanticQueryDraft(
+            analysis_type="summary",
+            metric_key="revenue",
+            metric_keys=["revenue"],
+            group_by_dimension_keys=[],
+            filters=[],
+            time_range=SemanticTimeRange(
+                dimension_key="invoice_date",
+                start="2011-01-01",
+                end="2011-12-31",
+            ),
+        ),
+        execution_plan=QueryExecutionPlan(
+            dataset_id="online_retail",
+            table="online_retail_orders",
+            sql="SELECT 10 AS revenue",
+            parameters=[],
+            analysis_type="summary",
+            metric_key="revenue",
+            metric_label="销售额",
+            metric_keys=["revenue"],
+            metric_labels=["销售额"],
+            group_by_dimension_keys=[],
+        ),
+    )
+
+    result = evaluate_case(case, response, rows=[{"revenue": 10}])
+
+    assert result.ok is False
+    assert result.failure_reason == "metric_keys_mismatch"
+
+
 def test_evaluate_case_treats_group_by_order_as_equivalent():
     case = EvalCase(
         id="country_month",
@@ -122,6 +168,78 @@ def test_evaluate_case_treats_group_by_order_as_equivalent():
     )
 
     result = evaluate_case(case, response, rows=[{"country": "United Kingdom"}])
+
+    assert result.ok is True
+
+
+def test_evaluate_case_accepts_group_by_dimension_fixed_by_eq_filter():
+    case = EvalCase(
+        id="uk_revenue_quantity",
+        question="2011年英国销售额和订单数分别是多少？",
+        expect_status="ready",
+        expect_metric_key="revenue",
+        expect_metric_keys=["revenue", "invoice_count"],
+        expect_group_by=[],
+        expect_filters=[
+            {
+                "dimension_key": "country",
+                "operator": "eq",
+                "value": "United Kingdom",
+            }
+        ],
+    )
+    response = SemanticParseResponse(
+        dataset_id="online_retail",
+        question=case.question,
+        status="ready",
+        semantic_query=SemanticQueryDraft(
+            analysis_type="group_by",
+            metric_key="revenue",
+            metric_keys=["revenue", "invoice_count"],
+            group_by_dimension_keys=["country"],
+            filters=[
+                {
+                    "dimension_key": "country",
+                    "operator": "eq",
+                    "value": "United Kingdom",
+                }
+            ],
+            time_range=SemanticTimeRange(
+                dimension_key="invoice_date",
+                start="2011-01-01",
+                end="2011-12-31",
+            ),
+        ),
+        execution_plan=QueryExecutionPlan(
+            dataset_id="online_retail",
+            table="online_retail_orders",
+            sql=(
+                "SELECT country, SUM(revenue) AS revenue, "
+                "COUNT(DISTINCT invoice_no) AS invoice_count "
+                "FROM online_retail_orders WHERE country = 'United Kingdom' "
+                "GROUP BY country"
+            ),
+            parameters=[],
+            analysis_type="group_by",
+            metric_key="revenue",
+            metric_label="销售额",
+            metric_keys=["revenue", "invoice_count"],
+            metric_labels=["销售额", "订单数"],
+            group_by_dimension_keys=["country"],
+        ),
+    )
+
+    result = evaluate_case(
+        case,
+        response,
+        rows=[
+            {
+                "country": "United Kingdom",
+                "revenue": 8254828.984,
+                "invoice_count": 18535,
+            }
+        ],
+    )
 
     assert result.ok is True
 
@@ -292,6 +410,58 @@ def test_run_evaluation_executes_expected_sql_for_ex_check(tmp_path):
     assert results[0].ex_ok is True
     assert results[0].row_count == 2
     assert results[0].expected_row_count == 2
+
+
+def test_fetch_rows_orders_grouped_multi_metric_by_first_metric(tmp_path):
+    import sqlite3
+
+    db_path = tmp_path / "eval.sqlite3"
+    with sqlite3.connect(db_path) as connection:
+        connection.execute("CREATE TABLE sales (country TEXT, revenue INTEGER, quantity INTEGER)")
+        connection.executemany(
+            "INSERT INTO sales (country, revenue, quantity) VALUES (?, ?, ?)",
+            [("UK", 7, 2), ("US", 3, 9)],
+        )
+        connection.commit()
+
+    response = SemanticParseResponse(
+        dataset_id="sales",
+        question="各国家销售额和销量是多少？",
+        status="ready",
+        semantic_query=SemanticQueryDraft(
+            analysis_type="group_by",
+            metric_key="revenue",
+            metric_keys=["revenue", "quantity"],
+            group_by_dimension_keys=["country"],
+            filters=[],
+            time_range=SemanticTimeRange(
+                dimension_key="order_date",
+                start="2026-01-01",
+                end="2026-12-31",
+            ),
+        ),
+        execution_plan=QueryExecutionPlan(
+            dataset_id="sales",
+            table="sales",
+            sql=(
+                "SELECT country, SUM(revenue) AS revenue, SUM(quantity) AS quantity "
+                "FROM sales GROUP BY country"
+            ),
+            parameters=[],
+            analysis_type="group_by",
+            metric_key="revenue",
+            metric_label="销售额",
+            metric_keys=["revenue", "quantity"],
+            metric_labels=["销售额", "销量"],
+            group_by_dimension_keys=["country"],
+        ),
+    )
+
+    with sqlite3.connect(db_path) as connection:
+        connection.row_factory = sqlite3.Row
+        rows = _fetch_rows(connection, response, row_limit=1)
+
+    assert rows == [{"country": "UK", "revenue": 7, "quantity": 2}]
 
 
 def test_summarize_results_groups_by_level_and_category():

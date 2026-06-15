@@ -37,6 +37,7 @@ class EvalCase(ValidateRequest):
     category: str | None = None
     expect_status: str = "ready"
     expect_metric_key: str | None = None
+    expect_metric_keys: list[str] | None = None
     expect_group_by: list[str] | None = None
     expect_filters: list[dict[str, Any]] = Field(default_factory=list)
     expected_sql: str | None = None
@@ -84,6 +85,7 @@ def load_cases(path: Path) -> list[EvalCase]:
                     category=payload.get("category"),
                     expect_status=str(payload.get("expect_status") or "ready"),
                     expect_metric_key=payload.get("expect_metric_key"),
+                    expect_metric_keys=payload.get("expect_metric_keys"),
                     expect_group_by=payload.get("expect_group_by"),
                     expect_filters=payload.get("expect_filters") or [],
                     expected_sql=payload.get("expected_sql"),
@@ -97,6 +99,25 @@ def _filter_matches(actual: SemanticFilter, expected: dict[str, Any]) -> bool:
         if key in expected and getattr(actual, key) != expected[key]:
             return False
     return True
+
+
+def _group_by_matches(
+    *,
+    actual_group_by: list[str],
+    expected_group_by: list[str],
+    filters: list[SemanticFilter],
+) -> bool:
+    actual_keys = set(actual_group_by)
+    expected_keys = set(expected_group_by)
+    missing_keys = expected_keys - actual_keys
+    if missing_keys:
+        return False
+
+    fixed_dimension_keys = {
+        item.dimension_key for item in filters if item.operator.lower() == "eq"
+    }
+    extra_keys = actual_keys - expected_keys
+    return extra_keys.issubset(fixed_dimension_keys)
 
 
 def _normalise_result_rows(
@@ -203,9 +224,27 @@ def evaluate_case(
             sql=sql,
         )
 
-    if case.expect_group_by is not None and set(
-        semantic_query.group_by_dimension_keys
-    ) != set(case.expect_group_by):
+    if case.expect_metric_keys is not None and set(
+        semantic_query.metric_keys
+    ) != set(case.expect_metric_keys):
+        return EvalResult(
+            case_id=case.id,
+            question=case.question,
+            level=case.level,
+            category=case.category,
+            status=response.status,
+            ok=False,
+            failure_reason="metric_keys_mismatch",
+            row_count=row_count,
+            expected_row_count=expected_row_count,
+            sql=sql,
+        )
+
+    if case.expect_group_by is not None and not _group_by_matches(
+        actual_group_by=semantic_query.group_by_dimension_keys,
+        expected_group_by=case.expect_group_by,
+        filters=semantic_query.filters,
+    ):
         return EvalResult(
             case_id=case.id,
             question=case.question,
@@ -323,7 +362,9 @@ def _fetch_rows(
 
     sql = response.execution_plan.sql
     if apply_group_limit and response.execution_plan.group_by_dimension_keys:
-        sql = f"SELECT * FROM ({sql}) ORDER BY metric_value DESC LIMIT ?"
+        metric_keys = response.execution_plan.metric_keys
+        order_column = "metric_value" if len(metric_keys) == 1 else metric_keys[0]
+        sql = f"SELECT * FROM ({sql}) ORDER BY {order_column} DESC LIMIT ?"
         cursor = connection.execute(sql, (row_limit,))
     else:
         cursor = connection.execute(sql)

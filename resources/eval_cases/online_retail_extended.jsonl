@@ -47,7 +47,7 @@
 {"id":"or_l4_002","level":"L4","category":"clarification_missing_time","question":"英国销售额是多少？","expect_status":"clarification"}
 {"id":"or_l4_003","level":"L4","category":"clarification_missing_time","question":"哪些商品卖得多？","expect_status":"clarification"}
 {"id":"or_l4_004","level":"L4","category":"clarification_missing_time","question":"德国每月销售额趋势？","expect_status":"clarification"}
-{"id":"or_l4_005","level":"L4","category":"clarification_multi_metric","question":"2011年销售额和销量分别是多少？","expect_status":"clarification"}
-{"id":"or_l4_006","level":"L4","category":"clarification_multi_metric","question":"2011年英国销售额和订单数分别是多少？","expect_status":"clarification"}
-{"id":"or_l4_007","level":"L4","category":"clarification_multi_metric","question":"2011年按国家看销售额和销量","expect_status":"clarification"}
-{"id":"or_l4_008","level":"L4","category":"clarification_multi_metric","question":"2011年德国各商品销售额和销量对比","expect_status":"clarification"}
+{"id":"or_l4_005","level":"L4","category":"multi_metric","question":"2011年销售额和销量分别是多少？","expect_status":"ready","expect_metric_key":"revenue","expect_metric_keys":["revenue","quantity"],"expect_group_by":[]}
+{"id":"or_l4_006","level":"L4","category":"multi_metric","question":"2011年英国销售额和订单数分别是多少？","expect_status":"ready","expect_metric_key":"revenue","expect_metric_keys":["revenue","invoice_count"],"expect_group_by":[],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"United Kingdom"}]}
+{"id":"or_l4_007","level":"L4","category":"multi_metric","question":"2011年按国家看销售额和销量","expect_status":"ready","expect_metric_key":"revenue","expect_metric_keys":["revenue","quantity"],"expect_group_by":["country"]}
+{"id":"or_l4_008","level":"L4","category":"multi_metric","question":"2011年德国各商品销售额和销量对比","expect_status":"ready","expect_metric_key":"revenue","expect_metric_keys":["revenue","quantity"],"expect_group_by":["product"],"expect_filters":[{"dimension_key":"country","operator":"eq","value":"Germany"}]}

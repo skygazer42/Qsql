@@ -259,7 +259,7 @@
 
 ### 2026-06-15 BIRD 多表 harder 子集评测已落地
 
-- 已新增十套 BIRD Mini-Dev 多表 BI 子集语义目录、plugin、few-shot 示例与 EX 评测集：
+- 已新增十一套 BIRD Mini-Dev 多表 BI 子集语义目录、plugin、few-shot 示例与 EX 评测集：
   - `bird_debit_card_specializing`
   - `bird_student_club`
   - `bird_financial`
@@ -270,6 +270,7 @@
   - `bird_european_football_2`
   - `bird_toxicology`
   - `bird_card_games`
+  - `bird_thrombosis_prediction`
 - 为接入 `bird_superhero`，底座补了两条通用能力：
   - 无默认时间维的 metric 不再被强制打回时间澄清
   - `group_by` 维度自动排除 `NULL` 桶，避免结果集多出无意义分组
@@ -282,6 +283,8 @@
   - 复合指标需要显式长 alias，避免 `bond count / atom count / molecule count` 这类短词误触发多指标澄清
 - 为接入 `bird_card_games`，验证并固化了一条更关键的 generic 约束：
   - 继续坚持只走 FK -> PK 安全 join path，不为 sibling fact join 放开 fan-out；复杂主题改用正确的 many-side 根表和指标锚点来建模
+- 为接入 `bird_thrombosis_prediction`，把这条约束压到另一个边界上：
+  - `Laboratory` 和 `Examination` 共享 `Patient`，但仍然不放开 sibling fact join；患者维度分析通过“各自事实表 -> Patient”的两条稳定链路解决
 - 当前代码下的真实 SQLite EX 结果：
   - `bird_debit_card_specializing`：`12/12`，`repeat=3 -> 36/36`
   - `bird_student_club`：`12/12`，`repeat=3 -> 36/36`
@@ -293,8 +296,10 @@
   - `bird_european_football_2`：`12/12`，`repeat=3 -> 36/36`
   - `bird_toxicology`：`12/12`，`repeat=3 -> 36/36`
   - `bird_card_games`：`12/12`，`repeat=3 -> 36/36`
-- 十套 harder 子集合计：
-  - 单轮 `120/120 = 100%`
-  - `repeat=3` 累计 `360/360 = 100%`
+  - `bird_thrombosis_prediction`：`12/12`，`repeat=3 -> 36/36`
+- 十一套 harder 子集合计：
+  - 单轮 `132/132 = 100%`
+  - `repeat=3` 累计 `396/396 = 100%`
   - `stability_rate=1.0000`
+- 这意味着 BIRD Mini-Dev 当前 11 个 SQLite 数据库已经全部接入到同一套受控 EX 评测链路。
 - 这组结果证明当前底座在**受控多表 BI 问数**场景下已经稳定，但**不能外推为 full BIRD / 开放域 arbitrary SQL 的整体准确率**。

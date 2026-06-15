@@ -1,0 +1,82 @@
+{
+  "dataset_id": "bird_thrombosis_prediction",
+  "value_mappings": [
+    {
+      "dimension_key": "patient_sex",
+      "operator": "eq",
+      "terms": {
+        "female": "F",
+        "Female": "F",
+        "male": "M",
+        "Male": "M"
+      }
+    },
+    {
+      "dimension_key": "patient_admission_flag",
+      "operator": "eq",
+      "terms": {
+        "admitted": "+",
+        "Admitted": "+",
+        "admitted patients": "+",
+        "not admitted": "-",
+        "Not admitted": "-",
+        "non-admitted": "-"
+      }
+    },
+    {
+      "dimension_key": "patient_diagnosis",
+      "operator": "eq",
+      "terms": {
+        "SLE": "SLE",
+        "sle": "SLE",
+        "lupus": "SLE",
+        "RA": "RA",
+        "ra": "RA",
+        "APS": "APS",
+        "aps": "APS"
+      }
+    },
+    {
+      "dimension_key": "exam_kct_result",
+      "operator": "eq",
+      "terms": {
+        "positive": "+",
+        "Positive": "+",
+        "negative": "-",
+        "Negative": "-"
+      }
+    },
+    {
+      "dimension_key": "exam_rvvt_result",
+      "operator": "eq",
+      "terms": {
+        "positive": "+",
+        "Positive": "+",
+        "negative": "-",
+        "Negative": "-"
+      }
+    },
+    {
+      "dimension_key": "exam_lac_result",
+      "operator": "eq",
+      "terms": {
+        "positive": "+",
+        "Positive": "+",
+        "negative": "-",
+        "Negative": "-"
+      }
+    },
+    {
+      "dimension_key": "lab_crp_result",
+      "operator": "eq",
+      "terms": {
+        "positive": "+",
+        "Positive": "+",
+        "negative": "-",
+        "Negative": "-",
+        "CRP plus": "+",
+        "crp plus": "+"
+      }
+    }
+  ]
+}

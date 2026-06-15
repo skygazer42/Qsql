@@ -1,0 +1,301 @@
+{
+  "catalog_version": "2026-06-15",
+  "dataset_id": "bird_thrombosis_prediction",
+  "tables": [
+    {
+      "key": "patient_dim",
+      "label": "患者维表",
+      "physical_table": "Patient",
+      "description": "患者性别、诊断和入院标记"
+    },
+    {
+      "key": "laboratory_fact",
+      "label": "化验事实表",
+      "physical_table": "Laboratory",
+      "description": "化验记录与生化指标"
+    },
+    {
+      "key": "examination_fact",
+      "label": "检查事实表",
+      "physical_table": "Examination",
+      "description": "检查记录与血栓相关标记"
+    }
+  ],
+  "entities": [
+    {
+      "key": "patient_id",
+      "table_key": "patient_dim",
+      "field": "ID",
+      "entity_type": "primary"
+    },
+    {
+      "key": "laboratory_patient_id",
+      "table_key": "laboratory_fact",
+      "field": "ID",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "examination_patient_id",
+      "table_key": "examination_fact",
+      "field": "ID",
+      "entity_type": "foreign"
+    }
+  ],
+  "relationships": [
+    {
+      "key": "laboratory_to_patient",
+      "left_entity_key": "laboratory_patient_id",
+      "right_entity_key": "patient_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "examination_to_patient",
+      "left_entity_key": "examination_patient_id",
+      "right_entity_key": "patient_id",
+      "join_type": "left",
+      "allowed": true
+    }
+  ],
+  "metrics": [
+    {
+      "key": "lab_record_count",
+      "label": "化验记录数",
+      "table_key": "laboratory_fact",
+      "field": "ID",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "patient_sex",
+        "patient_diagnosis",
+        "patient_admission_flag",
+        "lab_crp_result"
+      ]
+    },
+    {
+      "key": "lab_patient_count",
+      "label": "化验患者数",
+      "table_key": "laboratory_fact",
+      "field": "ID",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "patient_sex",
+        "patient_diagnosis",
+        "patient_admission_flag",
+        "lab_crp_result"
+      ]
+    },
+    {
+      "key": "total_cholesterol_avg",
+      "label": "平均总胆固醇",
+      "table_key": "laboratory_fact",
+      "field": "T-CHO",
+      "aggregation": "avg",
+      "supported_dimension_keys": [
+        "patient_sex",
+        "patient_diagnosis",
+        "patient_admission_flag",
+        "lab_crp_result"
+      ]
+    },
+    {
+      "key": "triglyceride_avg",
+      "label": "平均甘油三酯",
+      "table_key": "laboratory_fact",
+      "field": "TG",
+      "aggregation": "avg",
+      "supported_dimension_keys": [
+        "patient_sex",
+        "patient_diagnosis",
+        "patient_admission_flag",
+        "lab_crp_result"
+      ]
+    },
+    {
+      "key": "hemoglobin_avg",
+      "label": "平均血红蛋白",
+      "table_key": "laboratory_fact",
+      "field": "HGB",
+      "aggregation": "avg",
+      "supported_dimension_keys": [
+        "patient_sex",
+        "patient_diagnosis",
+        "patient_admission_flag",
+        "lab_crp_result"
+      ]
+    },
+    {
+      "key": "exam_record_count",
+      "label": "检查记录数",
+      "table_key": "examination_fact",
+      "field": "ID",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "patient_sex",
+        "patient_diagnosis",
+        "exam_thrombosis_flag",
+        "exam_kct_result",
+        "exam_rvvt_result",
+        "exam_lac_result"
+      ]
+    },
+    {
+      "key": "exam_patient_count",
+      "label": "检查患者数",
+      "table_key": "examination_fact",
+      "field": "ID",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "patient_sex",
+        "patient_diagnosis",
+        "exam_thrombosis_flag",
+        "exam_kct_result",
+        "exam_rvvt_result",
+        "exam_lac_result"
+      ]
+    }
+  ],
+  "dimensions": [
+    {
+      "key": "patient_sex",
+      "label": "患者性别",
+      "table_key": "patient_dim",
+      "field": "SEX",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "patient_diagnosis",
+      "label": "患者诊断",
+      "table_key": "patient_dim",
+      "field": "Diagnosis",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "patient_admission_flag",
+      "label": "入院标记",
+      "table_key": "patient_dim",
+      "field": "Admission",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "lab_crp_result",
+      "label": "CRP结果",
+      "table_key": "laboratory_fact",
+      "field": "CRP",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "exam_thrombosis_flag",
+      "label": "血栓标记",
+      "table_key": "examination_fact",
+      "field": "Thrombosis",
+      "kind": "number",
+      "operators": ["eq", "in", "gte", "lte"]
+    },
+    {
+      "key": "exam_kct_result",
+      "label": "KCT结果",
+      "table_key": "examination_fact",
+      "field": "KCT",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "exam_rvvt_result",
+      "label": "RVVT结果",
+      "table_key": "examination_fact",
+      "field": "RVVT",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "exam_lac_result",
+      "label": "LAC结果",
+      "table_key": "examination_fact",
+      "field": "LAC",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    }
+  ],
+  "aliases": [
+    {
+      "alias": "laboratory record count",
+      "target_type": "metric",
+      "target_key": "lab_record_count"
+    },
+    {
+      "alias": "laboratory patient count",
+      "target_type": "metric",
+      "target_key": "lab_patient_count"
+    },
+    {
+      "alias": "average total cholesterol",
+      "target_type": "metric",
+      "target_key": "total_cholesterol_avg"
+    },
+    {
+      "alias": "average triglyceride",
+      "target_type": "metric",
+      "target_key": "triglyceride_avg"
+    },
+    {
+      "alias": "average hemoglobin",
+      "target_type": "metric",
+      "target_key": "hemoglobin_avg"
+    },
+    {
+      "alias": "examination record count",
+      "target_type": "metric",
+      "target_key": "exam_record_count"
+    },
+    {
+      "alias": "examination patient count",
+      "target_type": "metric",
+      "target_key": "exam_patient_count"
+    },
+    {
+      "alias": "sex",
+      "target_type": "dimension",
+      "target_key": "patient_sex"
+    },
+    {
+      "alias": "diagnosis",
+      "target_type": "dimension",
+      "target_key": "patient_diagnosis"
+    },
+    {
+      "alias": "admission",
+      "target_type": "dimension",
+      "target_key": "patient_admission_flag"
+    },
+    {
+      "alias": "CRP result",
+      "target_type": "dimension",
+      "target_key": "lab_crp_result"
+    },
+    {
+      "alias": "thrombosis flag",
+      "target_type": "dimension",
+      "target_key": "exam_thrombosis_flag"
+    },
+    {
+      "alias": "KCT result",
+      "target_type": "dimension",
+      "target_key": "exam_kct_result"
+    },
+    {
+      "alias": "RVVT result",
+      "target_type": "dimension",
+      "target_key": "exam_rvvt_result"
+    },
+    {
+      "alias": "LAC result",
+      "target_type": "dimension",
+      "target_key": "exam_lac_result"
+    }
+  ],
+  "metric_versions": []
+}

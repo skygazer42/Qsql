@@ -7,7 +7,10 @@
 __pycache__/
 *.pyc
 
-docs/plans/
+# [CUSTOM] 仅放开已评审的 Text2SQL 路线图，其余 plans 仍保持忽略
+docs/plans/*
+!docs/plans/
+!docs/plans/2026-06-15-text2sql-landscape-and-integration-roadmap.md
 
 resources/db/
 resources/logs/

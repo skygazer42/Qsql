@@ -1,6 +1,6 @@
 # 2026-06-15 Text2SQL 主流方案调研与 QSQL 集成路线图
 
-- 状态：提案 / 待评审（draft）
+- 状态：实施中（P0-1 / P0-2 / P1-1 最小实现已落地）
 - 范围：基于主流开源 text2sql 项目与 2024–2026 学术进展，规划可集成进 QSQL 或用于优化的方向。
 - 结论先行：**QSQL 当前的「语义层 + LLM 受控解析」路线与业界公认的可靠方向一致，不需要推翻；本路线图聚焦补齐已被验证的几块短板。**
 
@@ -36,7 +36,7 @@
 |---|---|---|---|
 | P0-1 | 受控多表 join（实体/关系图） | 已完成最小实现：`entities/relationships` + builder join 规划 | 完全契合 |
 | P0-2 | 多候选投票 + 执行反馈（适配 draft 范式） | 已完成最小实现：draft 投票 + 空结果候选切换 | 契合（投在 draft 层） |
-| P1-1 | value retrieval（列值索引） | 已有 BM25 / value_mapping，可强化 | 契合 |
+| P1-1 | value retrieval（列值索引） | 已完成最小实现：metadata value_mapping / 样例值召回 + Pydantic 候选契约 | 契合 |
 | P1-2 | 评测对齐 BIRD / Spider 风格 | `semantic_eval_runner.py` 已是雏形 | 契合 |
 | P1-3 | 澄清升级：多选题 + 信息增益 | `semantic_service.py` 开放式澄清 | 契合 |
 | P2-1 | 相对时间解析（上季度 / 近 30 天） | `semantic_postprocessor.py` 正则较弱 | 契合 |
@@ -205,3 +205,11 @@
 - `SemanticQueryService` 使用 Pydantic 模型承载候选和投票选择结果。
 - `/api/v0/search` 接入空结果反馈；主候选为空时尝试下一个 ready 候选，全部为空则转澄清。
 - 变更记录：`docs/change-records/2026-06-15-semantic-voting-feedback-p0-2.md`
+
+### 2026-06-15 P1-1 已落地（最小实现）
+
+- 新增 `SemanticValueCandidate`，用 Pydantic 固化值召回输出契约。
+- 新增 `MetadataValueRetriever`，从 metadata value_mapping 与 schema sample values 召回真实列值候选。
+- `SemanticPostprocessor` 在 plugin 映射之后接入 value retriever，可自动补全或校正 filter value。
+- `/api/v0` 默认语义链路已挂接 metadata store 的值召回，不需要把业务值写死进底座。
+- 变更记录：`docs/change-records/2026-06-15-value-retrieval-p1-1.md`

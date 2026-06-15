@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from src.qsql.schemas import SemanticQueryDraft, SemanticQueryRequest, SemanticTimeRange
+from src.qsql.semantic_postprocessor import SemanticPostprocessor
 from src.qsql.semantic_service import SemanticQueryService
 
 
@@ -115,6 +116,20 @@ class _CandidateParser:
             }
         )
         return self._candidates[:candidate_count]
+
+
+def test_service_factory_keeps_injected_postprocessor():
+    postprocessor = SemanticPostprocessor(plugin_base_dir=Path("/missing"))
+
+    service = SemanticQueryService.from_model_config(
+        model_name="test-model",
+        base_url="http://127.0.0.1:8000/v1",
+        api_key="EMPTY",
+        temperature=0.0,
+        postprocessor=postprocessor,
+    )
+
+    assert service._postprocessor is postprocessor
 
 
 def test_service_votes_for_majority_candidate(tmp_path: Path):

@@ -468,6 +468,18 @@ class SemanticCandidateSelection(ValidateRequest):
     selected_index: int = Field(default=0, ge=0)
 
 
+class SemanticValueCandidate(ValidateRequest):
+    """从值索引或元数据映射召回的过滤值候选。"""
+
+    dataset_id: str = Field(min_length=1)
+    dimension_key: str = Field(min_length=1)
+    nl_term: str = Field(min_length=1)
+    db_value: Any
+    operator: str = Field(default="eq", min_length=1)
+    score: float = Field(default=1.0, ge=0.0)
+    source: Optional[str] = None
+
+
 class SemanticQueryRequest(ValidateRequest):
     """语义查询请求。"""
 

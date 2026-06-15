@@ -65,7 +65,9 @@ from src.server.use_mysql_api import pymysql_bp  # noqa: E402
 from src.qsql.local import LocalContext_OpenAICompatible  # noqa: E402
 from src.qsql.metadata_scheduler import start_metadata_sync_scheduler  # noqa: E402
 from src.qsql.observability import StructuredEventLogger  # noqa: E402
+from src.qsql.semantic_postprocessor import SemanticPostprocessor  # noqa: E402
 from src.qsql.semantic_service import SemanticQueryService  # noqa: E402
+from src.qsql.value_retriever import MetadataValueRetriever  # noqa: E402
 
 logging.getLogger("chromadb.telemetry").setLevel(logging.CRITICAL)
 
@@ -309,17 +311,23 @@ __mysql_config = {
 if all(__mysql_config.values()):
     vn.connect_to_mysql(**__mysql_config)
 
+__metadata_store = get_metadata_store()
 __semantic_query_service = SemanticQueryService.from_model_config(
     model_name=__config["model"],
     base_url=__config["base_url"],
     api_key=__config["api_key"],
     temperature=__config["temperature"],
+    # [CUSTOM] value retrieval 通过 metadata store 挂接到通用 postprocessor，
+    # 业务特殊词仍走 value_mapping / semantic plugin，不在底座写死。
+    postprocessor=SemanticPostprocessor(
+        value_retriever=MetadataValueRetriever(store=__metadata_store)
+    ),
     candidate_count=__config["semantic_candidate_count"],
     candidate_sampling_temperature=__config["semantic_candidate_sampling_temperature"],
     feedback_retry_limit=__config["semantic_feedback_retry_limit"],
 )
 # [CUSTOM] 按环境变量可选启动 metadata 定时同步，不影响默认本地开发路径。
-__metadata_sync_scheduler = start_metadata_sync_scheduler(store=get_metadata_store())
+__metadata_sync_scheduler = start_metadata_sync_scheduler(store=__metadata_store)
 
 # region 全局鉴权
 api_key = os.getenv("SECRET_ACCESS_KEY", "")

@@ -14,6 +14,7 @@ from .schemas import (
     SemanticMetricDefinition,
     SemanticQueryDraft,
     SemanticTimeRange,
+    SemanticValueCandidate,
 )
 
 
@@ -23,10 +24,15 @@ DEFAULT_PLUGIN_DIR = Path(__file__).resolve().parents[2] / "resources" / "semant
 class SemanticPostprocessor:
     """Repair model output with generic rules and dataset-scoped plugin hints."""
 
-    def __init__(self, plugin_base_dir: str | Path | None = None):
+    def __init__(
+        self,
+        plugin_base_dir: str | Path | None = None,
+        value_retriever=None,
+    ):
         self._plugin_base_dir = (
             Path(plugin_base_dir) if plugin_base_dir is not None else DEFAULT_PLUGIN_DIR
         )
+        self._value_retriever = value_retriever
 
     @staticmethod
     def _metric_map(catalog: SemanticCatalog) -> dict[str, SemanticMetricDefinition]:
@@ -228,6 +234,50 @@ class SemanticPostprocessor:
                     )
                     break
 
+    def _retrieve_values(
+        self,
+        *,
+        question: str,
+        catalog: SemanticCatalog,
+        dimensions: dict[str, SemanticDimensionDefinition],
+    ) -> list[SemanticValueCandidate]:
+        if self._value_retriever is None:
+            return []
+        return self._value_retriever.retrieve(
+            question=question,
+            catalog=catalog,
+            dimensions=dimensions,
+        )
+
+    def _apply_retrieved_values(
+        self,
+        *,
+        dimensions: dict[str, SemanticDimensionDefinition],
+        semantic_query: SemanticQueryDraft,
+        candidates: list[SemanticValueCandidate],
+    ) -> None:
+        for candidate in candidates:
+            if candidate.dimension_key not in dimensions:
+                continue
+
+            for filter_obj in semantic_query.filters:
+                if filter_obj.dimension_key != candidate.dimension_key:
+                    continue
+                if str(filter_obj.value) in {candidate.nl_term, str(candidate.db_value)}:
+                    filter_obj.operator = candidate.operator
+                    filter_obj.value = candidate.db_value
+
+            if self._has_filter(semantic_query, candidate.dimension_key):
+                continue
+
+            semantic_query.filters.append(
+                SemanticFilter(
+                    dimension_key=candidate.dimension_key,
+                    operator=candidate.operator,
+                    value=candidate.db_value,
+                )
+            )
+
     def repair(
         self,
         *,
@@ -268,6 +318,15 @@ class SemanticPostprocessor:
             dimensions=dimensions,
             semantic_query=semantic_query,
             plugin=self._load_plugin(catalog.dataset_id),
+        )
+        self._apply_retrieved_values(
+            dimensions=dimensions,
+            semantic_query=semantic_query,
+            candidates=self._retrieve_values(
+                question=question,
+                catalog=catalog,
+                dimensions=dimensions,
+            ),
         )
         self._normalise_filter_operators(semantic_query)
         return semantic_query

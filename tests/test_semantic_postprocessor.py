@@ -5,6 +5,7 @@ from src.qsql.schemas import (
     SemanticCatalog,
     SemanticFilter,
     SemanticQueryDraft,
+    SemanticValueCandidate,
     SemanticTimeRange,
     ValidateRequest,
 )
@@ -335,4 +336,47 @@ def test_postprocessor_normalizes_existing_filter_value_with_plugin(tmp_path: Pa
 
     assert repaired.filters == [
         SemanticFilter(dimension_key="region", operator="eq", value="East China")
+    ]
+
+
+class _FakeValueRetriever:
+    def retrieve(self, *, question, catalog, dimensions):
+        return [
+            SemanticValueCandidate(
+                dataset_id=catalog.dataset_id,
+                dimension_key="region",
+                nl_term="华北",
+                db_value="North China",
+                operator="eq",
+                score=1.0,
+                source="fake",
+            )
+        ]
+
+
+def test_postprocessor_uses_value_retriever_when_plugin_is_missing():
+    postprocessor = SemanticPostprocessor(
+        plugin_base_dir=Path("/missing"),
+        value_retriever=_FakeValueRetriever(),
+    )
+    query = SemanticQueryDraft(
+        analysis_type="summary",
+        metric_key="amount",
+        group_by_dimension_keys=[],
+        filters=[],
+        time_range=SemanticTimeRange(
+            dimension_key="order_date",
+            start="2026-01-01",
+            end="2026-12-31",
+        ),
+    )
+
+    repaired = postprocessor.repair(
+        question="2026年华北销售额是多少？",
+        catalog=_catalog(),
+        semantic_query=query,
+    )
+
+    assert repaired.filters == [
+        SemanticFilter(dimension_key="region", operator="eq", value="North China")
     ]

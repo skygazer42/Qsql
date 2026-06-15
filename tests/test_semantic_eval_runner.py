@@ -9,6 +9,7 @@ from scripts.semantic_eval_runner import (
     EvalResult,
     evaluate_case,
     run_evaluation,
+    summarize_consistency,
     summarize_results,
 )
 
@@ -331,3 +332,46 @@ def test_summarize_results_groups_by_level_and_category():
     assert summary["levels"]["L1"]["clarification"] == 1
     assert summary["categories"]["summary"]["ok"] == 2
     assert summary["categories"]["compound"]["error"] == 1
+
+
+def test_summarize_consistency_groups_repeated_case_signatures():
+    results = [
+        EvalResult(
+            case_id="stable",
+            question="q1",
+            status="ready",
+            ok=True,
+            sql="SELECT 1 AS metric_value",
+            ex_ok=True,
+        ),
+        EvalResult(
+            case_id="stable",
+            question="q1",
+            status="ready",
+            ok=True,
+            sql="SELECT 1 AS metric_value",
+            ex_ok=True,
+        ),
+        EvalResult(
+            case_id="unstable",
+            question="q2",
+            status="ready",
+            ok=True,
+            sql="SELECT 1 AS metric_value",
+        ),
+        EvalResult(
+            case_id="unstable",
+            question="q2",
+            status="ready",
+            ok=True,
+            sql="SELECT 2 AS metric_value",
+        ),
+    ]
+
+    summary = summarize_consistency(results)
+
+    assert summary.total_cases == 2
+    assert summary.stable_cases == 1
+    assert summary.unstable_cases == 1
+    assert summary.stability_rate == 0.5
+    assert summary.unstable_case_ids == ["unstable"]

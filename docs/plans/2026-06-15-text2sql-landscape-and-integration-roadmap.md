@@ -205,6 +205,7 @@
 - `SemanticQueryAgent` 支持 `parse_candidates(...)` 多候选采样。
 - `SemanticQueryService` 使用 Pydantic 模型承载候选和投票选择结果。
 - `/api/v0/search` 接入空结果反馈；主候选为空时尝试下一个 ready 候选，全部为空则转澄清。
+- `semantic_eval_runner --repeat` 会输出 `CONSISTENCY`，统计同一 case 多次解析稳定率。
 - 变更记录：`docs/change-records/2026-06-15-semantic-voting-feedback-p0-2.md`
 
 ### 2026-06-15 P1-1 已落地（最小实现）

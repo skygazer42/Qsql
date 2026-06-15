@@ -58,6 +58,16 @@ class EvalResult(ValidateRequest):
     sql: str | None = None
 
 
+class EvalConsistencySummary(ValidateRequest):
+    """repeat 评测下同一 case 的解析一致性摘要。"""
+
+    total_cases: int = Field(ge=0)
+    stable_cases: int = Field(ge=0)
+    unstable_cases: int = Field(ge=0)
+    stability_rate: float = Field(ge=0.0, le=1.0)
+    unstable_case_ids: list[str] = Field(default_factory=list)
+
+
 def load_cases(path: Path) -> list[EvalCase]:
     cases: list[EvalCase] = []
     with path.open("r", encoding="utf-8") as handle:
@@ -434,8 +444,57 @@ def summarize_results(results: list[EvalResult]) -> dict[str, dict[str, dict[str
     return summary
 
 
+def _consistency_signature(result: EvalResult) -> str:
+    payload = {
+        "status": result.status,
+        "ok": result.ok,
+        "failure_reason": result.failure_reason,
+        "ex_ok": result.ex_ok,
+        "sql": result.sql,
+    }
+    return json.dumps(payload, ensure_ascii=False, sort_keys=True)
+
+
+def summarize_consistency(results: list[EvalResult]) -> EvalConsistencySummary:
+    # [CUSTOM] repeat 模式下统计同一用例的输出稳定性，补足多候选投票收益观测入口。
+    grouped: dict[str, list[EvalResult]] = {}
+    for result in results:
+        grouped.setdefault(result.case_id, []).append(result)
+
+    unstable_case_ids: list[str] = []
+    for case_id, case_results in sorted(grouped.items()):
+        signatures = {_consistency_signature(result) for result in case_results}
+        if len(signatures) > 1:
+            unstable_case_ids.append(case_id)
+
+    total_cases = len(grouped)
+    unstable_cases = len(unstable_case_ids)
+    stable_cases = total_cases - unstable_cases
+    stability_rate = stable_cases / total_cases if total_cases else 1.0
+    return EvalConsistencySummary(
+        total_cases=total_cases,
+        stable_cases=stable_cases,
+        unstable_cases=unstable_cases,
+        stability_rate=stability_rate,
+        unstable_case_ids=unstable_case_ids,
+    )
+
+
 def _print_summary_block(title: str, counters: dict[str, int]) -> None:
     print(title + " " + " ".join(f"{key}={value}" for key, value in counters.items()))
+
+
+def _print_consistency(results: list[EvalResult]) -> None:
+    summary = summarize_consistency(results)
+    unstable_ids = ",".join(summary.unstable_case_ids) or "-"
+    print(
+        "CONSISTENCY "
+        f"total_cases={summary.total_cases} "
+        f"stable_cases={summary.stable_cases} "
+        f"unstable_cases={summary.unstable_cases} "
+        f"stability_rate={summary.stability_rate:.4f} "
+        f"unstable_case_ids={unstable_ids}"
+    )
 
 
 def _print_results(results: list[EvalResult], *, run_label: str | None = None) -> None:
@@ -482,6 +541,7 @@ def main() -> None:
     if args.repeat > 1:
         print("\nAGGREGATE")
         _print_results(all_results)
+        _print_consistency(all_results)
 
     if any(not result.ok for result in all_results):
         raise SystemExit(1)

@@ -6,6 +6,7 @@
 - `SemanticQueryService` 新增候选投票逻辑，候选、投票信息和选中索引用 Pydantic 模型承载。
 - `SemanticQueryService.prepare_query_with_feedback(...)` 支持在执行结果为空时切换到下一个 ready 候选。
 - `/api/v0/search` 接入执行反馈；`/api/v0/generate_sql` 仍然只生成受控 SQL，不触发数据库执行。
+- `semantic_eval_runner --repeat` 聚合输出 `CONSISTENCY`，用于观察同一 case 多次解析是否稳定。
 - `AppConfigModel` 增加：
   - `semantic_candidate_count`
   - `semantic_candidate_sampling_temperature`
@@ -21,6 +22,8 @@
 - `src/qsql/schemas.py`
 - `src/qsql/semantic_agent.py`
 - `src/qsql/semantic_service.py`
+- `scripts/semantic_eval_runner.py`
+- `tests/test_semantic_eval_runner.py`
 - `tests/test_semantic_voting_feedback.py`
 - `tests/test_app_semantic_migration.py`
 
@@ -29,16 +32,19 @@
 - 已支持：exact draft signature 多数投票
 - 已支持：主候选结果为空时尝试下一个 ready 候选
 - 已支持：所有候选为空时转澄清
+- 已支持：repeat 评测下按 case 输出稳定率与不稳定 case id
 - 未支持：selection-agent、复杂置信度模型、执行错误反思修复、自由 SQL 重写
 
 ## 如何验证
 
 ```bash
 .venv/bin/python -m pytest tests/test_semantic_voting_feedback.py tests/test_app_semantic_migration.py tests/test_semantic_query_pipeline.py -q
-ruff check src/qsql/semantic_agent.py src/qsql/semantic_service.py src/qsql/schemas.py app.py tests/test_semantic_voting_feedback.py tests/test_app_semantic_migration.py
+.venv/bin/python -m pytest tests/test_semantic_eval_runner.py -q
+ruff check src/qsql/semantic_agent.py src/qsql/semantic_service.py src/qsql/schemas.py app.py scripts/semantic_eval_runner.py tests/test_semantic_voting_feedback.py tests/test_app_semantic_migration.py tests/test_semantic_eval_runner.py
 ```
 
 本次验证结果：
 
 - `17 passed`
+- `tests/test_semantic_eval_runner.py`: `8 passed`
 - `ruff check` 通过

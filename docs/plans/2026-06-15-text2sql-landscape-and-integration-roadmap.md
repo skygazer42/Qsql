@@ -1,6 +1,6 @@
 # 2026-06-15 Text2SQL 主流方案调研与 QSQL 集成路线图
 
-- 状态：实施中（P0-1 / P0-2 / P1-1 / P1-2 / P1-3 最小实现已落地）
+- 状态：实施中（P0-1 / P0-2 / P1-1 / P1-2 / P1-3 / P2-1 最小实现已落地）
 - 范围：基于主流开源 text2sql 项目与 2024–2026 学术进展，规划可集成进 QSQL 或用于优化的方向。
 - 结论先行：**QSQL 当前的「语义层 + LLM 受控解析」路线与业界公认的可靠方向一致，不需要推翻；本路线图聚焦补齐已被验证的几块短板。**
 
@@ -39,7 +39,7 @@
 | P1-1 | value retrieval（列值索引） | 已完成最小实现：metadata value_mapping / 样例值召回 + Pydantic 候选契约 | 契合 |
 | P1-2 | 评测对齐 BIRD / Spider 风格 | 已完成最小实现：可选 expected_sql + EX 结果集等价统计 | 契合 |
 | P1-3 | 澄清升级：多选题 + 信息增益 | 已完成最小实现：结构化澄清候选项 | 契合 |
-| P2-1 | 相对时间解析（上季度 / 近 30 天） | `semantic_postprocessor.py` 正则较弱 | 契合 |
+| P2-1 | 相对时间解析（上季度 / 近 30 天） | 已完成最小实现：今年 / 本月 / 近 N 天 / 上季度 | 契合 |
 | P2-2 | 多指标查询 | `_mark_multi_metric_questions` 直接转澄清 | 契合 |
 | P2-3 | few-shot 示例检索 | 已有 chromadb，可复用 | 契合 |
 | 谨慎 | LLM 自由写 SQL / 开放 agent / RL 微调 | — | 与受控哲学冲突，暂不做 |
@@ -230,3 +230,10 @@
 - 多指标歧义时，service 会从 catalog 指标和别名中提取已命中的指标候选。
 - 缺时间范围时，service 会基于指标默认时间维度返回今年、本月、自定义时间范围三个通用候选。
 - 变更记录：`docs/change-records/2026-06-15-structured-clarification-p1-3.md`
+
+### 2026-06-15 P2-1 已落地（最小实现）
+
+- `SemanticPostprocessor` 支持注入 `today`，便于稳定测试相对时间。
+- 缺时间范围时，可确定性补全“今年 / 本月 / 这个月 / 近 N 天 / 最近 N 天 / 上季度”。
+- 相对时间只在 `semantic_query.time_range` 为空时生效，不覆盖模型或显式年份规则已给出的时间范围。
+- 变更记录：`docs/change-records/2026-06-15-relative-time-p2-1.md`

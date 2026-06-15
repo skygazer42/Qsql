@@ -1,4 +1,5 @@
 import json
+from datetime import date
 from pathlib import Path
 
 from src.qsql.schemas import (
@@ -106,6 +107,110 @@ def test_postprocessor_repairs_generic_year_operator_and_month_trend():
     )
     assert repaired.group_by_dimension_keys == ["order_month"]
     assert repaired.filters[0].operator == "gte"
+
+
+def test_postprocessor_repairs_current_year_relative_time():
+    postprocessor = SemanticPostprocessor(
+        plugin_base_dir=Path("/missing"),
+        today=date(2026, 6, 15),
+    )
+    query = SemanticQueryDraft(
+        analysis_type="summary",
+        metric_key="amount",
+        group_by_dimension_keys=[],
+        filters=[],
+        time_range=None,
+    )
+
+    repaired = postprocessor.repair(
+        question="今年销售额是多少？",
+        catalog=_catalog(),
+        semantic_query=query,
+    )
+
+    assert repaired.time_range == SemanticTimeRange(
+        dimension_key="order_date",
+        start="2026-01-01",
+        end="2026-12-31",
+    )
+
+
+def test_postprocessor_repairs_current_month_relative_time():
+    postprocessor = SemanticPostprocessor(
+        plugin_base_dir=Path("/missing"),
+        today=date(2026, 6, 15),
+    )
+    query = SemanticQueryDraft(
+        analysis_type="summary",
+        metric_key="amount",
+        group_by_dimension_keys=[],
+        filters=[],
+        time_range=None,
+    )
+
+    repaired = postprocessor.repair(
+        question="本月销售额是多少？",
+        catalog=_catalog(),
+        semantic_query=query,
+    )
+
+    assert repaired.time_range == SemanticTimeRange(
+        dimension_key="order_date",
+        start="2026-06-01",
+        end="2026-06-30",
+    )
+
+
+def test_postprocessor_repairs_recent_30_days_relative_time():
+    postprocessor = SemanticPostprocessor(
+        plugin_base_dir=Path("/missing"),
+        today=date(2026, 6, 15),
+    )
+    query = SemanticQueryDraft(
+        analysis_type="summary",
+        metric_key="amount",
+        group_by_dimension_keys=[],
+        filters=[],
+        time_range=None,
+    )
+
+    repaired = postprocessor.repair(
+        question="近30天销售额是多少？",
+        catalog=_catalog(),
+        semantic_query=query,
+    )
+
+    assert repaired.time_range == SemanticTimeRange(
+        dimension_key="order_date",
+        start="2026-05-17",
+        end="2026-06-15",
+    )
+
+
+def test_postprocessor_repairs_previous_quarter_relative_time():
+    postprocessor = SemanticPostprocessor(
+        plugin_base_dir=Path("/missing"),
+        today=date(2026, 6, 15),
+    )
+    query = SemanticQueryDraft(
+        analysis_type="summary",
+        metric_key="amount",
+        group_by_dimension_keys=[],
+        filters=[],
+        time_range=None,
+    )
+
+    repaired = postprocessor.repair(
+        question="上季度销售额是多少？",
+        catalog=_catalog(),
+        semantic_query=query,
+    )
+
+    assert repaired.time_range == SemanticTimeRange(
+        dimension_key="order_date",
+        start="2026-01-01",
+        end="2026-03-31",
+    )
 
 
 def test_postprocessor_repairs_explicit_dimension_group_by():

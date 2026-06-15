@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import calendar
 import json
 import re
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -28,11 +30,13 @@ class SemanticPostprocessor:
         self,
         plugin_base_dir: str | Path | None = None,
         value_retriever=None,
+        today: date | None = None,
     ):
         self._plugin_base_dir = (
             Path(plugin_base_dir) if plugin_base_dir is not None else DEFAULT_PLUGIN_DIR
         )
         self._value_retriever = value_retriever
+        self._today = today
 
     @staticmethod
     def _metric_map(catalog: SemanticCatalog) -> dict[str, SemanticMetricDefinition]:
@@ -86,6 +90,79 @@ class SemanticPostprocessor:
             start=f"{year}-01-01",
             end=f"{year}-12-31",
         )
+
+    def _today_date(self) -> date:
+        return self._today or date.today()
+
+    @staticmethod
+    def _metric_time_dimension_key(
+        metric: SemanticMetricDefinition | None,
+    ) -> str | None:
+        if metric is None:
+            return None
+        return metric.default_time_dimension_key
+
+    def _repair_relative_time(
+        self,
+        *,
+        question: str,
+        metric: SemanticMetricDefinition | None,
+        semantic_query: SemanticQueryDraft,
+    ) -> None:
+        # [CUSTOM] 通用中文相对时间解析，先覆盖业务问数高频表达，不绑定具体数据集。
+        if semantic_query.time_range is not None:
+            return
+
+        dimension_key = self._metric_time_dimension_key(metric)
+        if not dimension_key:
+            return
+
+        today = self._today_date()
+        if "今年" in question or "本年" in question:
+            semantic_query.time_range = SemanticTimeRange(
+                dimension_key=dimension_key,
+                start=f"{today.year}-01-01",
+                end=f"{today.year}-12-31",
+            )
+            return
+
+        if "本月" in question or "这个月" in question:
+            last_day = calendar.monthrange(today.year, today.month)[1]
+            semantic_query.time_range = SemanticTimeRange(
+                dimension_key=dimension_key,
+                start=f"{today.year}-{today.month:02d}-01",
+                end=f"{today.year}-{today.month:02d}-{last_day:02d}",
+            )
+            return
+
+        recent_days_match = re.search(r"(?:近|最近)\s*(\d{1,3})\s*天", question)
+        if recent_days_match is not None:
+            days = int(recent_days_match.group(1))
+            if days <= 0:
+                return
+            start_date = today - timedelta(days=days - 1)
+            semantic_query.time_range = SemanticTimeRange(
+                dimension_key=dimension_key,
+                start=start_date.isoformat(),
+                end=today.isoformat(),
+            )
+            return
+
+        if "上季度" in question:
+            current_quarter = (today.month - 1) // 3 + 1
+            previous_quarter = current_quarter - 1
+            year = today.year
+            if previous_quarter == 0:
+                previous_quarter = 4
+                year -= 1
+            start_month = (previous_quarter - 1) * 3 + 1
+            end_month = start_month + 2
+            end_day = calendar.monthrange(year, end_month)[1]
+            semantic_query.time_range = SemanticTimeRange(
+                dimension_key=dimension_key,
+                start=f"{year}-{start_month:02d}-01",
+                end=f"{year}-{end_month:02d}-{end_day:02d}",
+            )
 
     @staticmethod
     def _repair_month_trend(
@@ -296,6 +373,11 @@ class SemanticPostprocessor:
             semantic_query=semantic_query,
         )
         self._repair_explicit_year(
+            question=question,
+            metric=metric,
+            semantic_query=semantic_query,
+        )
+        self._repair_relative_time(
             question=question,
             metric=metric,
             semantic_query=semantic_query,

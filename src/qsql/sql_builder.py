@@ -2,18 +2,22 @@
 
 from __future__ import annotations
 
+from collections import deque
+from dataclasses import dataclass
 import re
 from typing import Any
 
 from .schemas import (
-    QueryExecutionPlan,
-    QueryParameter,
     SemanticCatalog,
     SemanticDimensionDefinition,
+    SemanticEntityDefinition,
+    QueryExecutionPlan,
+    QueryParameter,
     SemanticFilter,
     SemanticMetricDefinition,
     SemanticMetricVersionDefinition,
     SemanticQueryDraft,
+    SemanticRelationshipDefinition,
     SemanticTableDefinition,
 )
 
@@ -51,74 +55,189 @@ def _dimension_map(catalog: SemanticCatalog) -> dict[str, SemanticDimensionDefin
     return {dimension.key: dimension for dimension in catalog.dimensions}
 
 
+def _entity_map(catalog: SemanticCatalog) -> dict[str, SemanticEntityDefinition]:
+    return {entity.key: entity for entity in catalog.entities}
+
+
+def _relationship_map(
+    catalog: SemanticCatalog,
+) -> dict[str, SemanticRelationshipDefinition]:
+    return {relationship.key: relationship for relationship in catalog.relationships}
+
+
 def _version_map(
     catalog: SemanticCatalog,
 ) -> dict[str, SemanticMetricVersionDefinition]:
     return {version.key: version for version in catalog.metric_versions}
 
 
-def _aggregation_expr(metric: SemanticMetricDefinition) -> str:
-    field = _safe_identifier(metric.field)
+@dataclass(frozen=True)
+class _JoinStep:
+    from_table_key: str
+    to_table_key: str
+    from_field: str
+    to_field: str
+    join_type: str
+
+
+def _aggregation_expr(metric: SemanticMetricDefinition, field_ref: str) -> str:
     aggregation = metric.aggregation.lower()
     if aggregation == "count":
         return "COUNT(*)"
     if aggregation == "count_distinct":
-        return f"COUNT(DISTINCT {field})"
+        return f"COUNT(DISTINCT {field_ref})"
     if aggregation == "sum":
-        return f"SUM({field})"
+        return f"SUM({field_ref})"
     if aggregation == "avg":
-        return f"AVG({field})"
+        return f"AVG({field_ref})"
     if aggregation == "min":
-        return f"MIN({field})"
+        return f"MIN({field_ref})"
     if aggregation == "max":
-        return f"MAX({field})"
+        return f"MAX({field_ref})"
     raise ValueError(f"不支持的聚合函数: {metric.aggregation}")
 
 
 def _render_filter(
     filter_obj: SemanticFilter,
     dimensions: dict[str, SemanticDimensionDefinition],
+    field_ref: str,
 ) -> tuple[str, QueryParameter]:
     dimension = dimensions.get(filter_obj.dimension_key)
     if dimension is None:
         raise ValueError(f"维度未定义: {filter_obj.dimension_key}")
 
-    field = _safe_identifier(dimension.field)
     operator = filter_obj.operator.lower()
     value = filter_obj.value
 
     if operator == "eq":
         return (
-            f"{field} = {_sql_literal(value)}",
-            QueryParameter(name=field, operator="eq", value=value),
+            f"{field_ref} = {_sql_literal(value)}",
+            QueryParameter(name=dimension.field, operator="eq", value=value),
         )
     if operator == "in":
         if not isinstance(value, list) or len(value) == 0:
             raise ValueError(f"IN 过滤条件必须是非空数组: {dimension.key}")
         sql_values = ", ".join(_sql_literal(item) for item in value)
         return (
-            f"{field} IN ({sql_values})",
-            QueryParameter(name=field, operator="in", value=value),
+            f"{field_ref} IN ({sql_values})",
+            QueryParameter(name=dimension.field, operator="in", value=value),
         )
     if operator == "gte":
         return (
-            f"{field} >= {_sql_literal(value)}",
-            QueryParameter(name=field, operator="gte", value=value),
+            f"{field_ref} >= {_sql_literal(value)}",
+            QueryParameter(name=dimension.field, operator="gte", value=value),
         )
     if operator == "lte":
         return (
-            f"{field} <= {_sql_literal(value)}",
-            QueryParameter(name=field, operator="lte", value=value),
+            f"{field_ref} <= {_sql_literal(value)}",
+            QueryParameter(name=dimension.field, operator="lte", value=value),
         )
     if operator == "between":
         if not isinstance(value, list) or len(value) != 2:
             raise ValueError(f"BETWEEN 过滤条件必须是长度为 2 的数组: {dimension.key}")
         return (
-            f"{field} BETWEEN {_sql_literal(value[0])} AND {_sql_literal(value[1])}",
-            QueryParameter(name=field, operator="between", value=value),
+            f"{field_ref} BETWEEN {_sql_literal(value[0])} AND {_sql_literal(value[1])}",
+            QueryParameter(name=dimension.field, operator="between", value=value),
         )
 
     raise ValueError(f"不支持的过滤操作符: {filter_obj.operator}")
+
+
+def _relationship_steps(
+    *,
+    relationships: dict[str, SemanticRelationshipDefinition],
+    entities: dict[str, SemanticEntityDefinition],
+) -> list[_JoinStep]:
+    # [CUSTOM] 把 catalog 关系定义展开成双向图边，供确定性 BFS 找 join path。
+    steps: list[_JoinStep] = []
+    for relationship in relationships.values():
+        left_entity = entities[relationship.left_entity_key]
+        right_entity = entities[relationship.right_entity_key]
+        join_type = relationship.join_type.upper()
+        steps.append(
+            _JoinStep(
+                from_table_key=left_entity.table_key,
+                to_table_key=right_entity.table_key,
+                from_field=left_entity.field,
+                to_field=right_entity.field,
+                join_type=join_type,
+            )
+        )
+        steps.append(
+            _JoinStep(
+                from_table_key=right_entity.table_key,
+                to_table_key=left_entity.table_key,
+                from_field=right_entity.field,
+                to_field=left_entity.field,
+                join_type=join_type,
+            )
+        )
+    return steps
+
+
+def _plan_join_steps(
+    *,
+    anchor_table_key: str,
+    target_table_keys: set[str],
+    relationships: dict[str, SemanticRelationshipDefinition],
+    entities: dict[str, SemanticEntityDefinition],
+) -> list[_JoinStep]:
+    # [CUSTOM] 仅允许命中 catalog 中显式声明的最短 join path，找不到就明确报错。
+    if not target_table_keys:
+        return []
+
+    adjacency: dict[str, list[_JoinStep]] = {}
+    for step in _relationship_steps(relationships=relationships, entities=entities):
+        adjacency.setdefault(step.from_table_key, []).append(step)
+
+    queue: deque[str] = deque([anchor_table_key])
+    visited: set[str] = {anchor_table_key}
+    parents: dict[str, _JoinStep] = {}
+
+    while queue:
+        current = queue.popleft()
+        for step in adjacency.get(current, []):
+            if step.to_table_key in visited:
+                continue
+            visited.add(step.to_table_key)
+            parents[step.to_table_key] = step
+            queue.append(step.to_table_key)
+
+    missing_tables = sorted(table_key for table_key in target_table_keys if table_key not in visited)
+    if missing_tables:
+        raise ValueError(
+            "未声明可用的 join path: "
+            + ", ".join(f"{anchor_table_key} -> {table_key}" for table_key in missing_tables)
+        )
+
+    join_steps: list[_JoinStep] = []
+    joined_tables = {anchor_table_key}
+    for target_table_key in sorted(target_table_keys):
+        path: list[_JoinStep] = []
+        current = target_table_key
+        while current != anchor_table_key:
+            step = parents[current]
+            path.append(step)
+            current = step.from_table_key
+        for step in reversed(path):
+            if step.to_table_key in joined_tables:
+                continue
+            join_steps.append(step)
+            joined_tables.add(step.to_table_key)
+    return join_steps
+
+
+def _field_ref(
+    *,
+    table_key: str,
+    field: str,
+    table_aliases: dict[str, str],
+) -> str:
+    safe_field = _safe_identifier(field)
+    alias = table_aliases.get(table_key)
+    if alias is None:
+        return safe_field
+    return f"{alias}.{safe_field}"
 
 
 def build_query_execution_plan(
@@ -128,6 +247,8 @@ def build_query_execution_plan(
     tables = _table_map(catalog)
     metrics = _metric_map(catalog)
     dimensions = _dimension_map(catalog)
+    entities = _entity_map(catalog)
+    relationships = _relationship_map(catalog)
     versions = _version_map(catalog)
 
     metric = metrics.get(semantic_query.metric_key)
@@ -146,30 +267,10 @@ def build_query_execution_plan(
     if table_definition is None:
         raise ValueError(f"指标引用了未定义的语义表: {metric.key} -> {metric.table_key}")
 
-    table = _safe_identifier(table_definition.physical_table)
     where_clauses = []
     parameters = []
 
-    if time_dimension.table_key != metric.table_key:
-        raise ValueError("当前只支持单表宽表查询")
-
     time_field = _safe_identifier(time_dimension.field)
-    where_clauses.append(f"{time_field} >= {_sql_literal(semantic_query.time_range.start)}")
-    parameters.append(
-        QueryParameter(
-            name=time_field,
-            operator="gte",
-            value=semantic_query.time_range.start,
-        )
-    )
-    where_clauses.append(f"{time_field} <= {_sql_literal(semantic_query.time_range.end)}")
-    parameters.append(
-        QueryParameter(
-            name=time_field,
-            operator="lte",
-            value=semantic_query.time_range.end,
-        )
-    )
 
     if semantic_query.metric_version_key:
         version = versions.get(semantic_query.metric_version_key)
@@ -185,31 +286,123 @@ def build_query_execution_plan(
     else:
         semantic_filters = list(semantic_query.filters)
 
+    resolved_filter_dimensions: list[SemanticDimensionDefinition] = []
     for filter_obj in semantic_filters:
-        filter_sql, parameter = _render_filter(filter_obj, dimensions)
-        filter_dimension = dimensions[filter_obj.dimension_key]
-        if filter_dimension.table_key != metric.table_key:
-            raise ValueError("当前只支持单表宽表查询")
-        where_clauses.append(filter_sql)
-        parameters.append(parameter)
+        filter_dimension = dimensions.get(filter_obj.dimension_key)
+        if filter_dimension is None:
+            raise ValueError(f"维度未定义: {filter_obj.dimension_key}")
+        resolved_filter_dimensions.append(filter_dimension)
 
-    group_dimensions = []
-    select_dimensions = []
+    resolved_group_dimensions: list[SemanticDimensionDefinition] = []
     for dimension_key in semantic_query.group_by_dimension_keys:
         dimension = dimensions.get(dimension_key)
         if dimension is None:
             raise ValueError(f"维度未定义: {dimension_key}")
         if metric.supported_dimension_keys and dimension_key not in metric.supported_dimension_keys:
             raise ValueError(f"指标不支持维度: {dimension_key}")
-        if dimension.table_key != metric.table_key:
-            raise ValueError("当前只支持单表宽表查询")
-        field = _safe_identifier(dimension.field)
-        select_dimensions.append(f"{field} AS {dimension.key}")
-        group_dimensions.append(field)
+        resolved_group_dimensions.append(dimension)
 
-    aggregation_expr = _aggregation_expr(metric)
+    required_table_keys = {
+        time_dimension.table_key,
+        *(dimension.table_key for dimension in resolved_filter_dimensions),
+        *(dimension.table_key for dimension in resolved_group_dimensions),
+    }
+    required_table_keys.discard(metric.table_key)
+    join_steps = _plan_join_steps(
+        anchor_table_key=metric.table_key,
+        target_table_keys=required_table_keys,
+        relationships=relationships,
+        entities=entities,
+    )
+    table_aliases: dict[str, str] = {}
+    if join_steps:
+        table_aliases[metric.table_key] = "t0"
+        for index, step in enumerate(join_steps, start=1):
+            table_aliases[step.to_table_key] = f"t{index}"
+
+    time_field_ref = _field_ref(
+        table_key=time_dimension.table_key,
+        field=time_dimension.field,
+        table_aliases=table_aliases,
+    )
+    where_clauses.append(f"{time_field_ref} >= {_sql_literal(semantic_query.time_range.start)}")
+    parameters.append(
+        QueryParameter(
+            name=time_field,
+            operator="gte",
+            value=semantic_query.time_range.start,
+        )
+    )
+    where_clauses.append(f"{time_field_ref} <= {_sql_literal(semantic_query.time_range.end)}")
+    parameters.append(
+        QueryParameter(
+            name=time_field,
+            operator="lte",
+            value=semantic_query.time_range.end,
+        )
+    )
+
+    for filter_obj, filter_dimension in zip(semantic_filters, resolved_filter_dimensions):
+        filter_sql, parameter = _render_filter(
+            filter_obj,
+            dimensions,
+            _field_ref(
+                table_key=filter_dimension.table_key,
+                field=filter_dimension.field,
+                table_aliases=table_aliases,
+            ),
+        )
+        where_clauses.append(filter_sql)
+        parameters.append(parameter)
+
+    group_dimensions = []
+    select_dimensions = []
+    for dimension_key, dimension in zip(
+        semantic_query.group_by_dimension_keys,
+        resolved_group_dimensions,
+    ):
+        field_ref = _field_ref(
+            table_key=dimension.table_key,
+            field=dimension.field,
+            table_aliases=table_aliases,
+        )
+        select_dimensions.append(f"{field_ref} AS {dimension.key}")
+        group_dimensions.append(field_ref)
+
+    aggregation_expr = _aggregation_expr(
+        metric,
+        _field_ref(
+            table_key=metric.table_key,
+            field=metric.field,
+            table_aliases=table_aliases,
+        ),
+    )
     select_parts = [*select_dimensions, f"{aggregation_expr} AS metric_value"]
-    sql = f"SELECT {', '.join(select_parts)} FROM {table}"
+    anchor_table = _safe_identifier(table_definition.physical_table)
+    if join_steps:
+        sql = f"SELECT {', '.join(select_parts)} FROM {anchor_table} AS {table_aliases[metric.table_key]}"
+        for step in join_steps:
+            to_table_definition = tables.get(step.to_table_key)
+            if to_table_definition is None:
+                raise ValueError(f"关系引用了未定义的语义表: {step.to_table_key}")
+            to_table = _safe_identifier(to_table_definition.physical_table)
+            to_alias = table_aliases[step.to_table_key]
+            from_field_ref = _field_ref(
+                table_key=step.from_table_key,
+                field=step.from_field,
+                table_aliases=table_aliases,
+            )
+            to_field_ref = _field_ref(
+                table_key=step.to_table_key,
+                field=step.to_field,
+                table_aliases=table_aliases,
+            )
+            sql += (
+                f" {step.join_type} JOIN {to_table} AS {to_alias}"
+                f" ON {from_field_ref} = {to_field_ref}"
+            )
+    else:
+        sql = f"SELECT {', '.join(select_parts)} FROM {anchor_table}"
     if where_clauses:
         sql += " WHERE " + " AND ".join(where_clauses)
     if group_dimensions:

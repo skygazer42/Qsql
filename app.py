@@ -153,6 +153,28 @@ def _build_sql_execution_payload(
         raise RuntimeError(f"SQL 执行校验失败: {exc}") from exc
 
 
+def _build_sql_execution_payload_from_parse(
+    *, question: str, parse_response: Any
+) -> SQLExecutionPayload:
+    request_id = cache.generate_id(question=question)
+    if parse_response.status != "ready" or parse_response.execution_plan is None:
+        raise ValueError(parse_response.clarification_question or "请补充查询条件")
+
+    try:
+        sql_payload = SQLExecutionPayload.from_execution_plan(
+            id=request_id,
+            question=question,
+            execution_plan=parse_response.execution_plan,
+        )
+        return sql_payload.ensure_select_query()
+    except ValidationError as exc:
+        raise RuntimeError(
+            f"SQL 结构校验失败: {ValidateRequest.errors_to_string(exc)}"
+        ) from exc
+    except ValueError as exc:
+        raise RuntimeError(f"SQL 执行校验失败: {exc}") from exc
+
+
 def _cache_sql_execution_payload(sql_payload: SQLExecutionPayload) -> None:
     cache.set(id=sql_payload.id, field="dataset_id", value=sql_payload.dataset_id)
     cache.set(id=sql_payload.id, field="question", value=sql_payload.question)
@@ -203,6 +225,15 @@ def _load_app_config() -> dict[str, Any]:
             "n_results_documentation": _env_value_or_default(
                 "N_RESULTS_DOCUMENTATION", "10"
             ),
+            "semantic_candidate_count": _env_value_or_default(
+                "SEMANTIC_CANDIDATE_COUNT", "1"
+            ),
+            "semantic_candidate_sampling_temperature": os.environ.get(
+                "SEMANTIC_CANDIDATE_SAMPLING_TEMPERATURE"
+            ),
+            "semantic_feedback_retry_limit": _env_value_or_default(
+                "SEMANTIC_FEEDBACK_RETRY_LIMIT", "0"
+            ),
             "question_sql_max_distance": _env_value_or_default(
                 "QUESTION_SQL_MAX_DISTANCE", "0.45"
             ),
@@ -229,6 +260,9 @@ def _load_app_config() -> dict[str, Any]:
         "n_results_ddl": app_config.n_results_ddl,
         "n_results_sql": app_config.n_results_sql,
         "n_results_documentation": app_config.n_results_documentation,
+        "semantic_candidate_count": app_config.semantic_candidate_count,
+        "semantic_candidate_sampling_temperature": app_config.semantic_candidate_sampling_temperature,
+        "semantic_feedback_retry_limit": app_config.semantic_feedback_retry_limit,
         "question_sql_max_distance": app_config.question_sql_max_distance,
         "question_sql_distance_filter_enabled": app_config.question_sql_distance_filter_enabled,
     }
@@ -280,6 +314,9 @@ __semantic_query_service = SemanticQueryService.from_model_config(
     base_url=__config["base_url"],
     api_key=__config["api_key"],
     temperature=__config["temperature"],
+    candidate_count=__config["semantic_candidate_count"],
+    candidate_sampling_temperature=__config["semantic_candidate_sampling_temperature"],
+    feedback_retry_limit=__config["semantic_feedback_retry_limit"],
 )
 # [CUSTOM] 按环境变量可选启动 metadata 定时同步，不影响默认本地开发路径。
 __metadata_sync_scheduler = start_metadata_sync_scheduler(store=get_metadata_store())
@@ -720,12 +757,43 @@ def search():
     dataset_id = request_model.dataset_id
     question = request_model.question
     start_time = time.time()
+    df = None
+    run_sql_ms = 0
     try:
-        sql_payload, parse_response = _build_sql_execution_payload(
+        semantic_request = SemanticQueryRequest(
             dataset_id=dataset_id,
             question=question,
             history=request_model.history,
         )
+
+        def _execute_semantic_plan(execution_plan):
+            nonlocal run_sql_ms
+            validation_payload = SQLExecutionPayload.from_execution_plan(
+                id="feedback_validation",
+                question=question,
+                execution_plan=execution_plan,
+            ).ensure_select_query()
+            run_sql_started_at = time.time()
+            result_df = vn.run_sql(sql=validation_payload.sql)
+            run_sql_ms += int((time.time() - run_sql_started_at) * 1000)
+            return result_df
+
+        if hasattr(__semantic_query_service, "prepare_query_with_feedback"):
+            parse_response, df = __semantic_query_service.prepare_query_with_feedback(
+                semantic_request,
+                execute_plan=_execute_semantic_plan,
+            )
+            sql_payload = _build_sql_execution_payload_from_parse(
+                question=question,
+                parse_response=parse_response,
+            )
+        else:
+            sql_payload, parse_response = _build_sql_execution_payload(
+                dataset_id=dataset_id,
+                question=question,
+                history=request_model.history,
+            )
+
         timings = parse_response.timings or SemanticStageTimings(
             catalog_load_ms=0,
             semantic_agent_ms=0,
@@ -789,9 +857,10 @@ def search():
     )
     # 执行 SQL
     try:
-        run_sql_started_at = time.time()
-        df = vn.run_sql(sql=sql_payload.sql)
-        run_sql_ms = int((time.time() - run_sql_started_at) * 1000)
+        if df is None:
+            run_sql_started_at = time.time()
+            df = vn.run_sql(sql=sql_payload.sql)
+            run_sql_ms = int((time.time() - run_sql_started_at) * 1000)
         cache.set(id=sql_payload.id, field="df", value=df)
         result = _build_dataframe_response(request_id=sql_payload.id, df=df)
         _record_route_event(

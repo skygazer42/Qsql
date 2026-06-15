@@ -34,8 +34,8 @@
 
 | 优先级 | 方向 | 对位现状 | 与受控哲学 |
 |---|---|---|---|
-| P0-1 | 受控多表 join（实体/关系图） | `sql_builder.py` 多处硬 `raise 单表宽表` | 完全契合 |
-| P0-2 | 多候选投票 + 执行反馈（适配 draft 范式） | `semantic_agent.py` 单次 `run_sync` | 契合（投在 draft 层） |
+| P0-1 | 受控多表 join（实体/关系图） | 已完成最小实现：`entities/relationships` + builder join 规划 | 完全契合 |
+| P0-2 | 多候选投票 + 执行反馈（适配 draft 范式） | 已完成最小实现：draft 投票 + 空结果候选切换 | 契合（投在 draft 层） |
 | P1-1 | value retrieval（列值索引） | 已有 BM25 / value_mapping，可强化 | 契合 |
 | P1-2 | 评测对齐 BIRD / Spider 风格 | `semantic_eval_runner.py` 已是雏形 | 契合 |
 | P1-3 | 澄清升级：多选题 + 信息增益 | `semantic_service.py` 开放式澄清 | 契合 |
@@ -187,3 +187,21 @@
 - CodeS（value retrieval / BM25 加速）：https://arxiv.org/pdf/2402.16347 ｜ BIRD Mini-Dev：https://github.com/bird-bench/mini_dev
 - AmbiSQL（多选题澄清）：https://www.arxiv.org/pdf/2508.15276 ｜ 信息增益澄清：https://arxiv.org/abs/2507.06467
 - 中文数据集梳理（CSpider / DuSQL / Chase / TableQA）：https://www.cnblogs.com/ting1/p/18126496
+
+---
+
+## 九、实施进展
+
+### 2026-06-15 P0-1 已落地
+
+- 新增 `SemanticEntityDefinition` / `SemanticRelationshipDefinition`，catalog 可以显式声明 join path。
+- `sql_builder` 已支持基于关系图的确定性 join 规划，未声明路径会明确拒绝。
+- `semantic_draft_generator` 会从元数据主外键生成实体和关系草稿。
+- 变更记录：`docs/change-records/2026-06-15-controlled-join-p0-1.md`
+
+### 2026-06-15 P0-2 已落地
+
+- `SemanticQueryAgent` 支持 `parse_candidates(...)` 多候选采样。
+- `SemanticQueryService` 使用 Pydantic 模型承载候选和投票选择结果。
+- `/api/v0/search` 接入空结果反馈；主候选为空时尝试下一个 ready 候选，全部为空则转澄清。
+- 变更记录：`docs/change-records/2026-06-15-semantic-voting-feedback-p0-2.md`

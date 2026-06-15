@@ -15,7 +15,9 @@ from .schemas import (
     SemanticCatalog,
     SemanticDimensionDefinition,
     SemanticDraftArtifact,
+    SemanticEntityDefinition,
     SemanticMetricDefinition,
+    SemanticRelationshipDefinition,
     SemanticTableDefinition,
     ValidateRequest,
 )
@@ -90,6 +92,61 @@ def _metric_source_column(columns: list[dict]) -> str:
     return str(columns[0]["column_name"])
 
 
+# [CUSTOM] metadata 草稿阶段同步生成 join 实体/关系，避免多表能力只能靠手写 catalog。
+def _entity_key(table_name: str, column_name: str) -> str:
+    return f"{_normalize_key(table_name, prefix='table')}_{_normalize_key(column_name, prefix='entity')}"
+
+
+def _build_entities(columns: list[dict]) -> list[SemanticEntityDefinition]:
+    entities: list[SemanticEntityDefinition] = []
+    for column in columns:
+        is_primary_key = int(column.get("is_primary_key") or 0) == 1
+        is_foreign_key = int(column.get("is_foreign_key") or 0) == 1
+        if not is_primary_key and not is_foreign_key:
+            continue
+        entities.append(
+            SemanticEntityDefinition(
+                key=_entity_key(str(column["table_name"]), str(column["column_name"])),
+                table_key=_normalize_key(str(column["table_name"]), prefix="table"),
+                field=str(column["column_name"]),
+                entity_type="primary" if is_primary_key else "foreign",
+            )
+        )
+    return entities
+
+
+def _build_relationships(
+    relationships: list[dict],
+    entity_keys: set[str],
+) -> list[SemanticRelationshipDefinition]:
+    items: list[SemanticRelationshipDefinition] = []
+    for relationship in relationships:
+        left_entity_key = _entity_key(
+            str(relationship["source_table_name"]),
+            str(relationship["source_column_name"]),
+        )
+        right_entity_key = _entity_key(
+            str(relationship["target_table_name"]),
+            str(relationship["target_column_name"]),
+        )
+        if left_entity_key not in entity_keys or right_entity_key not in entity_keys:
+            continue
+        items.append(
+            SemanticRelationshipDefinition(
+                key=(
+                    f"{_normalize_key(str(relationship['source_table_name']), prefix='table')}"
+                    f"_to_{_normalize_key(str(relationship['target_table_name']), prefix='table')}"
+                    f"_{_normalize_key(str(relationship['source_column_name']), prefix='entity')}"
+                ),
+                left_entity_key=left_entity_key,
+                right_entity_key=right_entity_key,
+                join_type="left",
+                description=relationship.get("description"),
+            )
+        )
+    return items
+
+
 def _numeric_metric_columns(columns: list[dict]) -> list[dict]:
     items = []
     for column in columns:
@@ -123,6 +180,7 @@ def generate_semantic_catalog_draft(
         grouped_columns.setdefault(str(column["table_name"]), []).append(column)
 
     semantic_tables: list[SemanticTableDefinition] = []
+    semantic_entities = _build_entities(columns)
     semantic_dimensions: list[SemanticDimensionDefinition] = []
     semantic_metrics: list[SemanticMetricDefinition] = []
     semantic_aliases: list[SemanticAliasDefinition] = []
@@ -217,12 +275,19 @@ def generate_semantic_catalog_draft(
         seen_alias_pairs.add(alias_key)
         deduped_aliases.append(alias)
 
+    semantic_relationships = _build_relationships(
+        relationships,
+        {entity.key for entity in semantic_entities},
+    )
+
     catalog = ValidateRequest.parse(
         SemanticCatalog,
         {
             "catalog_version": f"draft-{date.today().isoformat()}",
             "dataset_id": dataset_id,
             "tables": [item.model_dump() for item in semantic_tables],
+            "entities": [item.model_dump() for item in semantic_entities],
+            "relationships": [item.model_dump() for item in semantic_relationships],
             "metrics": [item.model_dump() for item in semantic_metrics],
             "dimensions": [item.model_dump() for item in semantic_dimensions],
             "aliases": [item.model_dump() for item in deduped_aliases],

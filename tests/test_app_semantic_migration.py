@@ -17,6 +17,7 @@ from src.qsql.schemas import (
 class _FakeSemanticService:
     def __init__(self) -> None:
         self.requests = []
+        self.feedback_requests = []
 
     def prepare_query(self, request_model):
         self.requests.append(request_model)
@@ -56,6 +57,12 @@ class _FakeSemanticService:
                 total_ms=6,
             ),
         )
+
+    def prepare_query_with_feedback(self, request_model, *, execute_plan):
+        self.feedback_requests.append(request_model)
+        response = self.prepare_query(request_model)
+        execution_result = execute_plan(response.execution_plan)
+        return response, execution_result
 
 
 def _load_app_module(monkeypatch, tmp_path: Path):
@@ -117,7 +124,7 @@ def test_search_v0_uses_semantic_service(monkeypatch, tmp_path: Path):
     assert payload["code"] == 0
     assert payload["data"]["df"] == '[{"metric_value":1}]'
     assert captured_sql == ["SELECT 1 AS metric_value"]
-    assert fake_service.requests[0].dataset_id == "sales"
+    assert fake_service.feedback_requests[0].dataset_id == "sales"
 
 
 def test_app_no_longer_exposes_v1_semantic_routes(monkeypatch, tmp_path: Path):

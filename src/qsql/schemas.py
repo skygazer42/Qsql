@@ -48,6 +48,11 @@ class AppConfigModel(ValidateRequest):
     n_results_ddl: int = Field(default=10, ge=1, le=100)
     n_results_sql: int = Field(default=10, ge=1, le=200)
     n_results_documentation: int = Field(default=10, ge=1, le=200)
+    semantic_candidate_count: int = Field(default=1, ge=1, le=8)
+    semantic_candidate_sampling_temperature: Optional[float] = Field(
+        default=None, ge=0.0, le=10.0
+    )
+    semantic_feedback_retry_limit: int = Field(default=0, ge=0, le=5)
     question_sql_max_distance: Optional[float] = Field(
         default=0.45, ge=0.0, le=2.0
     )
@@ -233,6 +238,26 @@ class SemanticTableDefinition(ValidateRequest):
     default_time_dimension_key: Optional[str] = None
 
 
+# [CUSTOM] 受控多表 join 只允许通过显式实体/关系配置暴露可用路径。
+class SemanticEntityDefinition(ValidateRequest):
+    """语义实体定义，用于受控 join。"""
+
+    key: str = Field(min_length=1)
+    table_key: str = Field(min_length=1)
+    field: str = Field(min_length=1)
+    entity_type: str = Field(min_length=1)
+
+
+class SemanticRelationshipDefinition(ValidateRequest):
+    """语义关系定义，只允许 catalog 显式声明的 join path。"""
+
+    key: str = Field(min_length=1)
+    left_entity_key: str = Field(min_length=1)
+    right_entity_key: str = Field(min_length=1)
+    join_type: str = Field(default="left", min_length=1)
+    description: Optional[str] = None
+
+
 class SemanticMetricVersionDefinition(ValidateRequest):
     """指标口径配置。"""
 
@@ -263,6 +288,8 @@ class SemanticCatalog(ValidateRequest):
     catalog_version: str = Field(min_length=1)
     dataset_id: str = Field(min_length=1)
     tables: list[SemanticTableDefinition] = Field(default_factory=list)
+    entities: list[SemanticEntityDefinition] = Field(default_factory=list)
+    relationships: list[SemanticRelationshipDefinition] = Field(default_factory=list)
     metrics: list[SemanticMetricDefinition] = Field(default_factory=list)
     dimensions: list[SemanticDimensionDefinition] = Field(default_factory=list)
     aliases: list[SemanticAliasDefinition] = Field(default_factory=list)
@@ -273,12 +300,41 @@ class SemanticCatalog(ValidateRequest):
         # [CUSTOM] 语义目录改成正式结构后，在加载阶段就校验表/指标/维度/口径引用，
         # 避免业务配置错误拖到 SQL 生成期才暴露。
         table_keys = {item.key for item in self.tables}
+        entity_map = {item.key: item for item in self.entities}
         metric_map = {item.key: item for item in self.metrics}
         dimension_map = {item.key: item for item in self.dimensions}
         version_map = {item.key: item for item in self.metric_versions}
 
         if not self.tables:
             raise ValueError("语义目录至少需要定义一张语义表")
+
+        for entity in self.entities:
+            if entity.table_key not in table_keys:
+                raise ValueError(f"实体引用了未定义的语义表: {entity.key} -> {entity.table_key}")
+            if entity.entity_type not in {"primary", "foreign"}:
+                raise ValueError(f"不支持的实体类型: {entity.key} -> {entity.entity_type}")
+
+        for relationship in self.relationships:
+            left_entity = entity_map.get(relationship.left_entity_key)
+            right_entity = entity_map.get(relationship.right_entity_key)
+            if left_entity is None:
+                raise ValueError(
+                    f"关系引用了未定义的左侧实体: {relationship.key} -> {relationship.left_entity_key}"
+                )
+            if right_entity is None:
+                raise ValueError(
+                    f"关系引用了未定义的右侧实体: {relationship.key} -> {relationship.right_entity_key}"
+                )
+            if relationship.left_entity_key == relationship.right_entity_key:
+                raise ValueError(f"关系两端不能引用同一实体: {relationship.key}")
+            if left_entity.table_key == right_entity.table_key:
+                raise ValueError(
+                    f"当前不支持同表自连接关系: {relationship.key} -> {left_entity.table_key}"
+                )
+            if relationship.join_type.lower() not in {"left", "inner"}:
+                raise ValueError(
+                    f"不支持的关系 join_type: {relationship.key} -> {relationship.join_type}"
+                )
 
         for metric in self.metrics:
             if metric.table_key not in table_keys:
@@ -289,10 +345,6 @@ class SemanticCatalog(ValidateRequest):
                     raise ValueError(
                         f"指标默认时间维度未定义: {metric.key} -> {metric.default_time_dimension_key}"
                     )
-                if metric_time_dimension.table_key != metric.table_key:
-                    raise ValueError(
-                        f"指标默认时间维度不属于当前语义表: {metric.key} -> {metric.default_time_dimension_key}"
-                    )
                 if metric_time_dimension.kind != "time":
                     raise ValueError(
                         f"指标默认时间维度必须是 time 类型: {metric.key} -> {metric.default_time_dimension_key}"
@@ -301,10 +353,6 @@ class SemanticCatalog(ValidateRequest):
                 dimension = dimension_map.get(dimension_key)
                 if dimension is None:
                     raise ValueError(f"指标引用了未定义的维度: {metric.key} -> {dimension_key}")
-                if dimension.table_key != metric.table_key:
-                    raise ValueError(
-                        f"指标与支持维度不在同一语义表: {metric.key} -> {dimension_key}"
-                    )
             for version_key in metric.allowed_version_keys:
                 version = version_map.get(version_key)
                 if version is None:
@@ -347,10 +395,6 @@ class SemanticCatalog(ValidateRequest):
                 if dimension is None:
                     raise ValueError(
                         f"指标口径引用了未定义的维度: {version.key} -> {filter_obj.dimension_key}"
-                    )
-                if dimension.table_key != metric.table_key:
-                    raise ValueError(
-                        f"指标口径过滤维度与指标不在同一语义表: {version.key} -> {filter_obj.dimension_key}"
                     )
 
         for alias in self.aliases:
@@ -406,6 +450,22 @@ class QueryExecutionPlan(ValidateRequest):
     metric_key: str = Field(min_length=1)
     metric_label: str = Field(min_length=1)
     group_by_dimension_keys: list[str] = Field(default_factory=list)
+
+
+class SemanticQueryCandidate(ValidateRequest):
+    """语义候选及其投票信息。"""
+
+    index: int = Field(ge=0)
+    semantic_query: SemanticQueryDraft
+    signature: str = Field(min_length=1)
+    vote_count: int = Field(default=1, ge=1)
+
+
+class SemanticCandidateSelection(ValidateRequest):
+    """多候选投票选择结果。"""
+
+    candidates: list[SemanticQueryCandidate] = Field(default_factory=list)
+    selected_index: int = Field(default=0, ge=0)
 
 
 class SemanticQueryRequest(ValidateRequest):
@@ -470,6 +530,7 @@ class SemanticParseResponse(ValidateRequest):
     clarification_question: Optional[str] = None
     semantic_query: Optional[SemanticQueryDraft] = None
     execution_plan: Optional[QueryExecutionPlan] = None
+    candidate_selection: Optional[SemanticCandidateSelection] = None
     timings: Optional[SemanticStageTimings] = None
 
 
@@ -483,6 +544,7 @@ class SemanticRunResponse(ValidateRequest):
     clarification_question: Optional[str] = None
     semantic_query: Optional[SemanticQueryDraft] = None
     execution_plan: Optional[QueryExecutionPlan] = None
+    candidate_selection: Optional[SemanticCandidateSelection] = None
     df: Optional[str] = None
     timings: Optional[SemanticStageTimings] = None
 

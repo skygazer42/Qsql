@@ -1,0 +1,420 @@
+{
+  "catalog_version": "2026-06-15",
+  "dataset_id": "bird_formula_1",
+  "tables": [
+    {
+      "key": "results_fact",
+      "label": "正赛结果事实表",
+      "physical_table": "results",
+      "description": "每场比赛每位车手的正赛结果"
+    },
+    {
+      "key": "qualifying_fact",
+      "label": "排位赛事实表",
+      "physical_table": "qualifying",
+      "description": "每场比赛每位车手的排位结果"
+    },
+    {
+      "key": "race_dim",
+      "label": "比赛维表",
+      "physical_table": "races",
+      "description": "大奖赛基础信息"
+    },
+    {
+      "key": "circuit_dim",
+      "label": "赛道维表",
+      "physical_table": "circuits",
+      "description": "赛道和国家信息"
+    },
+    {
+      "key": "driver_dim",
+      "label": "车手维表",
+      "physical_table": "drivers",
+      "description": "车手基础信息"
+    },
+    {
+      "key": "constructor_dim",
+      "label": "车队维表",
+      "physical_table": "constructors",
+      "description": "车队基础信息"
+    },
+    {
+      "key": "status_dim",
+      "label": "完赛状态维表",
+      "physical_table": "status",
+      "description": "正赛结果状态"
+    }
+  ],
+  "entities": [
+    {
+      "key": "results_result_id",
+      "table_key": "results_fact",
+      "field": "resultId",
+      "entity_type": "primary"
+    },
+    {
+      "key": "qualifying_qualify_id",
+      "table_key": "qualifying_fact",
+      "field": "qualifyId",
+      "entity_type": "primary"
+    },
+    {
+      "key": "race_race_id",
+      "table_key": "race_dim",
+      "field": "raceId",
+      "entity_type": "primary"
+    },
+    {
+      "key": "circuit_circuit_id",
+      "table_key": "circuit_dim",
+      "field": "circuitId",
+      "entity_type": "primary"
+    },
+    {
+      "key": "driver_driver_id",
+      "table_key": "driver_dim",
+      "field": "driverId",
+      "entity_type": "primary"
+    },
+    {
+      "key": "constructor_constructor_id",
+      "table_key": "constructor_dim",
+      "field": "constructorId",
+      "entity_type": "primary"
+    },
+    {
+      "key": "status_status_id",
+      "table_key": "status_dim",
+      "field": "statusId",
+      "entity_type": "primary"
+    },
+    {
+      "key": "results_race_id",
+      "table_key": "results_fact",
+      "field": "raceId",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "results_driver_id",
+      "table_key": "results_fact",
+      "field": "driverId",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "results_constructor_id",
+      "table_key": "results_fact",
+      "field": "constructorId",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "results_status_id",
+      "table_key": "results_fact",
+      "field": "statusId",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "qualifying_race_id",
+      "table_key": "qualifying_fact",
+      "field": "raceId",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "qualifying_driver_id",
+      "table_key": "qualifying_fact",
+      "field": "driverId",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "qualifying_constructor_id",
+      "table_key": "qualifying_fact",
+      "field": "constructorId",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "race_circuit_id",
+      "table_key": "race_dim",
+      "field": "circuitId",
+      "entity_type": "foreign"
+    }
+  ],
+  "relationships": [
+    {
+      "key": "results_to_race",
+      "left_entity_key": "results_race_id",
+      "right_entity_key": "race_race_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "results_to_driver",
+      "left_entity_key": "results_driver_id",
+      "right_entity_key": "driver_driver_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "results_to_constructor",
+      "left_entity_key": "results_constructor_id",
+      "right_entity_key": "constructor_constructor_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "results_to_status",
+      "left_entity_key": "results_status_id",
+      "right_entity_key": "status_status_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "qualifying_to_race",
+      "left_entity_key": "qualifying_race_id",
+      "right_entity_key": "race_race_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "qualifying_to_driver",
+      "left_entity_key": "qualifying_driver_id",
+      "right_entity_key": "driver_driver_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "qualifying_to_constructor",
+      "left_entity_key": "qualifying_constructor_id",
+      "right_entity_key": "constructor_constructor_id",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "race_to_circuit",
+      "left_entity_key": "race_circuit_id",
+      "right_entity_key": "circuit_circuit_id",
+      "join_type": "left",
+      "allowed": true
+    }
+  ],
+  "metrics": [
+    {
+      "key": "result_count",
+      "label": "正赛结果数",
+      "table_key": "results_fact",
+      "field": "resultId",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "race_date",
+        "race_year",
+        "race_name",
+        "circuit_country",
+        "driver_nationality",
+        "constructor_name",
+        "status_name"
+      ],
+      "default_time_dimension_key": "race_date"
+    },
+    {
+      "key": "result_points_total",
+      "label": "正赛积分合计",
+      "table_key": "results_fact",
+      "field": "points",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "race_date",
+        "race_year",
+        "race_name",
+        "circuit_country",
+        "driver_nationality",
+        "constructor_name",
+        "status_name"
+      ],
+      "default_time_dimension_key": "race_date"
+    },
+    {
+      "key": "result_laps_total",
+      "label": "正赛圈数合计",
+      "table_key": "results_fact",
+      "field": "laps",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "race_date",
+        "race_year",
+        "race_name",
+        "circuit_country",
+        "driver_nationality",
+        "constructor_name",
+        "status_name"
+      ],
+      "default_time_dimension_key": "race_date"
+    },
+    {
+      "key": "qualifying_count",
+      "label": "排位记录数",
+      "table_key": "qualifying_fact",
+      "field": "qualifyId",
+      "aggregation": "count",
+      "supported_dimension_keys": [
+        "race_date",
+        "race_year",
+        "race_name",
+        "circuit_country",
+        "driver_nationality",
+        "constructor_name"
+      ],
+      "default_time_dimension_key": "race_date"
+    }
+  ],
+  "dimensions": [
+    {
+      "key": "race_date",
+      "label": "比赛日期",
+      "table_key": "race_dim",
+      "field": "date",
+      "kind": "time",
+      "operators": [
+        "gte",
+        "lte",
+        "between"
+      ]
+    },
+    {
+      "key": "race_year",
+      "label": "赛季年份",
+      "table_key": "race_dim",
+      "field": "year",
+      "kind": "number",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "race_name",
+      "label": "大奖赛名称",
+      "table_key": "race_dim",
+      "field": "name",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "circuit_country",
+      "label": "赛道国家",
+      "table_key": "circuit_dim",
+      "field": "country",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "driver_nationality",
+      "label": "车手国籍",
+      "table_key": "driver_dim",
+      "field": "nationality",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "constructor_name",
+      "label": "车队名称",
+      "table_key": "constructor_dim",
+      "field": "name",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    },
+    {
+      "key": "status_name",
+      "label": "完赛状态",
+      "table_key": "status_dim",
+      "field": "status",
+      "kind": "categorical",
+      "operators": [
+        "eq",
+        "in"
+      ]
+    }
+  ],
+  "aliases": [
+    {
+      "alias": "result count",
+      "target_type": "metric",
+      "target_key": "result_count"
+    },
+    {
+      "alias": "results",
+      "target_type": "metric",
+      "target_key": "result_count"
+    },
+    {
+      "alias": "points",
+      "target_type": "metric",
+      "target_key": "result_points_total"
+    },
+    {
+      "alias": "total points",
+      "target_type": "metric",
+      "target_key": "result_points_total"
+    },
+    {
+      "alias": "laps",
+      "target_type": "metric",
+      "target_key": "result_laps_total"
+    },
+    {
+      "alias": "qualifying count",
+      "target_type": "metric",
+      "target_key": "qualifying_count"
+    },
+    {
+      "alias": "qualifying entries",
+      "target_type": "metric",
+      "target_key": "qualifying_count"
+    },
+    {
+      "alias": "year",
+      "target_type": "dimension",
+      "target_key": "race_year"
+    },
+    {
+      "alias": "race",
+      "target_type": "dimension",
+      "target_key": "race_name"
+    },
+    {
+      "alias": "race name",
+      "target_type": "dimension",
+      "target_key": "race_name"
+    },
+    {
+      "alias": "circuit country",
+      "target_type": "dimension",
+      "target_key": "circuit_country"
+    },
+    {
+      "alias": "driver nationality",
+      "target_type": "dimension",
+      "target_key": "driver_nationality"
+    },
+    {
+      "alias": "constructor",
+      "target_type": "dimension",
+      "target_key": "constructor_name"
+    },
+    {
+      "alias": "status",
+      "target_type": "dimension",
+      "target_key": "status_name"
+    }
+  ],
+  "metric_versions": []
+}

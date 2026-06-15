@@ -1,0 +1,51 @@
+{
+  "dataset_id": "bird_formula_1",
+  "value_mappings": [
+    {
+      "dimension_key": "constructor_name",
+      "operator": "eq",
+      "terms": {
+        "Ferrari": "Ferrari",
+        "ferrari": "Ferrari",
+        "McLaren": "McLaren",
+        "mclaren": "McLaren",
+        "Red Bull": "Red Bull",
+        "red bull": "Red Bull",
+        "Williams": "Williams",
+        "williams": "Williams",
+        "Brawn": "Brawn",
+        "brawn": "Brawn"
+      }
+    },
+    {
+      "dimension_key": "circuit_country",
+      "operator": "eq",
+      "terms": {
+        "UK": "UK",
+        "uk": "UK",
+        "Italy": "Italy",
+        "italy": "Italy",
+        "Monaco": "Monaco",
+        "monaco": "Monaco"
+      }
+    },
+    {
+      "dimension_key": "driver_nationality",
+      "operator": "eq",
+      "terms": {
+        "British": "British",
+        "british": "British",
+        "German": "German",
+        "german": "German"
+      }
+    },
+    {
+      "dimension_key": "status_name",
+      "operator": "eq",
+      "terms": {
+        "Finished": "Finished",
+        "finished": "Finished"
+      }
+    }
+  ]
+}

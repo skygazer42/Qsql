@@ -255,6 +255,7 @@ class SemanticRelationshipDefinition(ValidateRequest):
     left_entity_key: str = Field(min_length=1)
     right_entity_key: str = Field(min_length=1)
     join_type: str = Field(default="left", min_length=1)
+    allowed: bool = True
     description: Optional[str] = None
 
 

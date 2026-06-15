@@ -9,6 +9,8 @@
 - 新增 `tests/test_sql_builder_join.py`，覆盖：
   - 声明过的 join path 可以生成 `LEFT JOIN`
   - 未声明的 join path 明确拒绝
+  - `allowed=false` 的关系不会参与 join
+  - 反向 PK -> FK join 会被拒绝，避免 fan-out
 
 ## 为什么改
 
@@ -27,7 +29,8 @@
 
 - 已支持：单指标查询下，事实表到维表的显式 join path
 - 已支持：时间维、filter、group by 跨表
-- 未支持：多事实表、同表自连接、fan-out/chasm 防护、执行反馈重试
+- 已支持：跳过禁用关系，并拒绝反向 PK -> FK 的 fan-out 风险路径
+- 未支持：多事实表、同表自连接、chasm join 自动推断、执行反馈重试
 
 ## 如何验证
 
@@ -38,5 +41,6 @@ ruff check src/qsql/schemas.py src/qsql/sql_builder.py src/qsql/semantic_agent.p
 
 本次验证结果：
 
-- `14 passed`
+- `20 passed`
 - `ruff check` 通过
+- `py_compile` 通过

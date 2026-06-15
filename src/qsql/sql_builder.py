@@ -78,6 +78,7 @@ class _JoinStep:
     from_field: str
     to_field: str
     join_type: str
+    safe: bool = True
 
 
 def _aggregation_expr(metric: SemanticMetricDefinition, field_ref: str) -> str:
@@ -148,31 +149,68 @@ def _relationship_steps(
     relationships: dict[str, SemanticRelationshipDefinition],
     entities: dict[str, SemanticEntityDefinition],
 ) -> list[_JoinStep]:
-    # [CUSTOM] 把 catalog 关系定义展开成双向图边，供确定性 BFS 找 join path。
+    # [CUSTOM] 只把 FK -> PK 方向作为安全 join 边；反向 PK -> FK 仅用于诊断 fan-out 风险。
     steps: list[_JoinStep] = []
     for relationship in relationships.values():
+        if not relationship.allowed:
+            continue
         left_entity = entities[relationship.left_entity_key]
         right_entity = entities[relationship.right_entity_key]
         join_type = relationship.join_type.upper()
+        if left_entity.entity_type == "foreign" and right_entity.entity_type == "primary":
+            foreign_entity = left_entity
+            primary_entity = right_entity
+        elif right_entity.entity_type == "foreign" and left_entity.entity_type == "primary":
+            foreign_entity = right_entity
+            primary_entity = left_entity
+        else:
+            continue
+
         steps.append(
             _JoinStep(
-                from_table_key=left_entity.table_key,
-                to_table_key=right_entity.table_key,
-                from_field=left_entity.field,
-                to_field=right_entity.field,
+                from_table_key=foreign_entity.table_key,
+                to_table_key=primary_entity.table_key,
+                from_field=foreign_entity.field,
+                to_field=primary_entity.field,
                 join_type=join_type,
+                safe=True,
             )
         )
         steps.append(
             _JoinStep(
-                from_table_key=right_entity.table_key,
-                to_table_key=left_entity.table_key,
-                from_field=right_entity.field,
-                to_field=left_entity.field,
+                from_table_key=primary_entity.table_key,
+                to_table_key=foreign_entity.table_key,
+                from_field=primary_entity.field,
+                to_field=foreign_entity.field,
                 join_type=join_type,
+                safe=False,
             )
         )
     return steps
+
+
+def _reachable_tables(
+    *,
+    anchor_table_key: str,
+    steps: list[_JoinStep],
+    include_unsafe: bool,
+) -> set[str]:
+    adjacency: dict[str, list[_JoinStep]] = {}
+    for step in steps:
+        if not include_unsafe and not step.safe:
+            continue
+        adjacency.setdefault(step.from_table_key, []).append(step)
+
+    queue: deque[str] = deque([anchor_table_key])
+    visited: set[str] = {anchor_table_key}
+    while queue:
+        current = queue.popleft()
+        for step in adjacency.get(current, []):
+            if step.to_table_key in visited:
+                continue
+            visited.add(step.to_table_key)
+            queue.append(step.to_table_key)
+    return visited
 
 
 def _plan_join_steps(
@@ -187,7 +225,10 @@ def _plan_join_steps(
         return []
 
     adjacency: dict[str, list[_JoinStep]] = {}
-    for step in _relationship_steps(relationships=relationships, entities=entities):
+    relationship_steps = _relationship_steps(relationships=relationships, entities=entities)
+    for step in relationship_steps:
+        if not step.safe:
+            continue
         adjacency.setdefault(step.from_table_key, []).append(step)
 
     queue: deque[str] = deque([anchor_table_key])
@@ -205,6 +246,21 @@ def _plan_join_steps(
 
     missing_tables = sorted(table_key for table_key in target_table_keys if table_key not in visited)
     if missing_tables:
+        unsafe_reachable = _reachable_tables(
+            anchor_table_key=anchor_table_key,
+            steps=relationship_steps,
+            include_unsafe=True,
+        )
+        fanout_tables = [
+            table_key for table_key in missing_tables if table_key in unsafe_reachable
+        ]
+        if fanout_tables:
+            raise ValueError(
+                "join path 可能导致 fan-out: "
+                + ", ".join(
+                    f"{anchor_table_key} -> {table_key}" for table_key in fanout_tables
+                )
+            )
         raise ValueError(
             "未声明可用的 join path: "
             + ", ".join(f"{anchor_table_key} -> {table_key}" for table_key in missing_tables)

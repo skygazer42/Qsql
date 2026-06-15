@@ -196,6 +196,7 @@
 
 - 新增 `SemanticEntityDefinition` / `SemanticRelationshipDefinition`，catalog 可以显式声明 join path。
 - `sql_builder` 已支持基于关系图的确定性 join 规划，未声明路径会明确拒绝。
+- join 规划只允许 FK -> PK 的安全方向，`allowed=false` 与反向 PK -> FK fan-out 路径会被拒绝。
 - `semantic_draft_generator` 会从元数据主外键生成实体和关系草稿。
 - 变更记录：`docs/change-records/2026-06-15-controlled-join-p0-1.md`
 

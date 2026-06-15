@@ -8,7 +8,12 @@ from src.qsql.semantic_catalog import load_semantic_catalog
 from src.qsql.sql_builder import build_query_execution_plan
 
 
-def _write_join_catalog(tmp_path: Path, *, include_relationships: bool) -> Path:
+def _write_join_catalog(
+    tmp_path: Path,
+    *,
+    include_relationships: bool,
+    relationship_allowed: bool = True,
+) -> Path:
     semantic_dir = tmp_path / "resources" / "semantic"
     semantic_dir.mkdir(parents=True, exist_ok=True)
     catalog_path = semantic_dir / "sales_join.json"
@@ -51,6 +56,7 @@ def _write_join_catalog(tmp_path: Path, *, include_relationships: bool) -> Path:
                             "left_entity_key": "sales_orders_customer_id",
                             "right_entity_key": "customers_id",
                             "join_type": "left",
+                            "allowed": relationship_allowed,
                         }
                     ]
                     if include_relationships
@@ -69,6 +75,14 @@ def _write_join_catalog(tmp_path: Path, *, include_relationships: bool) -> Path:
                             "customer_level",
                         ],
                         "default_time_dimension_key": "order_date",
+                    },
+                    {
+                        "key": "customer_count",
+                        "label": "客户数",
+                        "table_key": "customers",
+                        "field": "id",
+                        "aggregation": "count_distinct",
+                        "supported_dimension_keys": ["order_date"],
                     }
                 ],
                 "dimensions": [
@@ -147,3 +161,37 @@ def test_build_query_execution_plan_rejects_undeclared_join_path(tmp_path: Path)
 
     with pytest.raises(ValueError, match="未声明可用的 join path"):
         build_query_execution_plan(catalog=catalog, semantic_query=_join_draft())
+
+
+def test_build_query_execution_plan_rejects_disabled_join_path(tmp_path: Path):
+    semantic_dir = _write_join_catalog(
+        tmp_path,
+        include_relationships=True,
+        relationship_allowed=False,
+    )
+
+    catalog = load_semantic_catalog("sales_join", base_dir=semantic_dir)
+
+    with pytest.raises(ValueError, match="未声明可用的 join path"):
+        build_query_execution_plan(catalog=catalog, semantic_query=_join_draft())
+
+
+def test_build_query_execution_plan_rejects_reverse_pk_to_fk_fanout(
+    tmp_path: Path,
+):
+    semantic_dir = _write_join_catalog(tmp_path, include_relationships=True)
+    catalog = load_semantic_catalog("sales_join", base_dir=semantic_dir)
+    draft = SemanticQueryDraft(
+        analysis_type="summary",
+        metric_key="customer_count",
+        group_by_dimension_keys=[],
+        filters=[],
+        time_range=SemanticTimeRange(
+            dimension_key="order_date",
+            start="2026-01-01",
+            end="2026-01-31",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="fan-out"):
+        build_query_execution_plan(catalog=catalog, semantic_query=draft)

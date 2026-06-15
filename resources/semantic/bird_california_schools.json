@@ -1,0 +1,312 @@
+{
+  "catalog_version": "2026-06-15",
+  "dataset_id": "bird_california_schools",
+  "tables": [
+    {
+      "key": "schools_dim",
+      "label": "学校维表",
+      "physical_table": "schools",
+      "description": "学校基础信息"
+    },
+    {
+      "key": "frpm_fact",
+      "label": "FRPM事实表",
+      "physical_table": "frpm",
+      "description": "免费/减价午餐与K-12招生统计"
+    },
+    {
+      "key": "sat_fact",
+      "label": "SAT成绩事实表",
+      "physical_table": "satscores",
+      "description": "SAT参与人数与平均分统计"
+    }
+  ],
+  "entities": [
+    {
+      "key": "school_cds",
+      "table_key": "schools_dim",
+      "field": "CDSCode",
+      "entity_type": "primary"
+    },
+    {
+      "key": "frpm_school_cds",
+      "table_key": "frpm_fact",
+      "field": "CDSCode",
+      "entity_type": "foreign"
+    },
+    {
+      "key": "sat_school_cds",
+      "table_key": "sat_fact",
+      "field": "cds",
+      "entity_type": "foreign"
+    }
+  ],
+  "relationships": [
+    {
+      "key": "frpm_to_school",
+      "left_entity_key": "frpm_school_cds",
+      "right_entity_key": "school_cds",
+      "join_type": "left",
+      "allowed": true
+    },
+    {
+      "key": "sat_to_school",
+      "left_entity_key": "sat_school_cds",
+      "right_entity_key": "school_cds",
+      "join_type": "left",
+      "allowed": true
+    }
+  ],
+  "metrics": [
+    {
+      "key": "school_count",
+      "label": "学校数",
+      "table_key": "schools_dim",
+      "field": "CDSCode",
+      "aggregation": "count_distinct",
+      "supported_dimension_keys": [
+        "county_name",
+        "funding_type",
+        "charter_flag",
+        "school_status"
+      ]
+    },
+    {
+      "key": "frpm_enrollment_k12_sum",
+      "label": "K12招生数",
+      "table_key": "frpm_fact",
+      "field": "Enrollment (K-12)",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "county_name",
+        "funding_type",
+        "charter_flag",
+        "school_status",
+        "district_type",
+        "school_type"
+      ]
+    },
+    {
+      "key": "frpm_free_meal_k12_sum",
+      "label": "K12免费午餐人数",
+      "table_key": "frpm_fact",
+      "field": "Free Meal Count (K-12)",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "county_name",
+        "funding_type",
+        "charter_flag",
+        "school_status",
+        "district_type",
+        "school_type"
+      ]
+    },
+    {
+      "key": "frpm_eligible_pct_k12_avg",
+      "label": "K12FRPM比例均值",
+      "table_key": "frpm_fact",
+      "field": "Percent (%) Eligible FRPM (K-12)",
+      "aggregation": "avg",
+      "supported_dimension_keys": [
+        "county_name",
+        "funding_type",
+        "charter_flag",
+        "school_status",
+        "district_type",
+        "school_type"
+      ]
+    },
+    {
+      "key": "sat_test_taker_sum",
+      "label": "SAT参考人数",
+      "table_key": "sat_fact",
+      "field": "NumTstTakr",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "county_name",
+        "funding_type",
+        "charter_flag",
+        "school_status",
+        "score_record_type"
+      ]
+    },
+    {
+      "key": "sat_math_avg",
+      "label": "SAT数学均分",
+      "table_key": "sat_fact",
+      "field": "AvgScrMath",
+      "aggregation": "avg",
+      "supported_dimension_keys": [
+        "county_name",
+        "funding_type",
+        "charter_flag",
+        "school_status",
+        "score_record_type"
+      ]
+    },
+    {
+      "key": "sat_read_avg",
+      "label": "SAT阅读均分",
+      "table_key": "sat_fact",
+      "field": "AvgScrRead",
+      "aggregation": "avg",
+      "supported_dimension_keys": [
+        "county_name",
+        "funding_type",
+        "charter_flag",
+        "school_status",
+        "score_record_type"
+      ]
+    },
+    {
+      "key": "sat_ge1500_sum",
+      "label": "SAT1500以上人数",
+      "table_key": "sat_fact",
+      "field": "NumGE1500",
+      "aggregation": "sum",
+      "supported_dimension_keys": [
+        "county_name",
+        "funding_type",
+        "charter_flag",
+        "school_status",
+        "score_record_type"
+      ]
+    }
+  ],
+  "dimensions": [
+    {
+      "key": "county_name",
+      "label": "县",
+      "table_key": "schools_dim",
+      "field": "County",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "funding_type",
+      "label": "经费类型",
+      "table_key": "schools_dim",
+      "field": "FundingType",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "charter_flag",
+      "label": "是否特许学校",
+      "table_key": "schools_dim",
+      "field": "Charter",
+      "kind": "number",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "school_status",
+      "label": "学校状态",
+      "table_key": "schools_dim",
+      "field": "StatusType",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "district_type",
+      "label": "学区类型",
+      "table_key": "frpm_fact",
+      "field": "District Type",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "school_type",
+      "label": "学校类型",
+      "table_key": "frpm_fact",
+      "field": "School Type",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    },
+    {
+      "key": "score_record_type",
+      "label": "成绩记录类型",
+      "table_key": "sat_fact",
+      "field": "rtype",
+      "kind": "categorical",
+      "operators": ["eq", "in"]
+    }
+  ],
+  "aliases": [
+    {
+      "alias": "school count",
+      "target_type": "metric",
+      "target_key": "school_count"
+    },
+    {
+      "alias": "k-12 enrollment",
+      "target_type": "metric",
+      "target_key": "frpm_enrollment_k12_sum"
+    },
+    {
+      "alias": "free meal count",
+      "target_type": "metric",
+      "target_key": "frpm_free_meal_k12_sum"
+    },
+    {
+      "alias": "frpm eligible percentage",
+      "target_type": "metric",
+      "target_key": "frpm_eligible_pct_k12_avg"
+    },
+    {
+      "alias": "sat test takers",
+      "target_type": "metric",
+      "target_key": "sat_test_taker_sum"
+    },
+    {
+      "alias": "sat math score",
+      "target_type": "metric",
+      "target_key": "sat_math_avg"
+    },
+    {
+      "alias": "sat reading score",
+      "target_type": "metric",
+      "target_key": "sat_read_avg"
+    },
+    {
+      "alias": "students scoring 1500+",
+      "target_type": "metric",
+      "target_key": "sat_ge1500_sum"
+    },
+    {
+      "alias": "county",
+      "target_type": "dimension",
+      "target_key": "county_name"
+    },
+    {
+      "alias": "funding type",
+      "target_type": "dimension",
+      "target_key": "funding_type"
+    },
+    {
+      "alias": "charter",
+      "target_type": "dimension",
+      "target_key": "charter_flag"
+    },
+    {
+      "alias": "status",
+      "target_type": "dimension",
+      "target_key": "school_status"
+    },
+    {
+      "alias": "district type",
+      "target_type": "dimension",
+      "target_key": "district_type"
+    },
+    {
+      "alias": "school type",
+      "target_type": "dimension",
+      "target_key": "school_type"
+    },
+    {
+      "alias": "school-level",
+      "target_type": "dimension",
+      "target_key": "score_record_type"
+    }
+  ],
+  "metric_versions": []
+}

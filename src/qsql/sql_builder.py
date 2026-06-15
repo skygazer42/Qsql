@@ -26,9 +26,10 @@ _IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def _safe_identifier(value: str) -> str:
-    if not _IDENTIFIER_PATTERN.match(value):
-        raise ValueError(f"非法标识符: {value}")
-    return value
+    if _IDENTIFIER_PATTERN.match(value):
+        return value
+    escaped = value.replace('"', '""')
+    return f'"{escaped}"'
 
 
 def _sql_literal(value: Any) -> str:
@@ -398,7 +399,7 @@ def build_query_execution_plan(
             table_aliases[step.to_table_key] = f"t{index}"
 
     if semantic_query.time_range is not None and time_dimension is not None:
-        time_field = _safe_identifier(time_dimension.field)
+        time_field = time_dimension.field
         time_field_ref = _field_ref(
             table_key=time_dimension.table_key,
             field=time_dimension.field,

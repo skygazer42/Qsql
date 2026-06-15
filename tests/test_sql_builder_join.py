@@ -195,3 +195,72 @@ def test_build_query_execution_plan_rejects_reverse_pk_to_fk_fanout(
 
     with pytest.raises(ValueError, match="fan-out"):
         build_query_execution_plan(catalog=catalog, semantic_query=draft)
+
+
+def test_build_query_execution_plan_supports_quoted_field_identifiers(tmp_path: Path):
+    semantic_dir = tmp_path / "resources" / "semantic"
+    semantic_dir.mkdir(parents=True, exist_ok=True)
+    catalog_path = semantic_dir / "quoted_fields.json"
+    catalog_path.write_text(
+        json.dumps(
+            {
+                "catalog_version": "2026-06-15",
+                "dataset_id": "quoted_fields",
+                "tables": [
+                    {
+                        "key": "sales_fact",
+                        "label": "销售事实表",
+                        "physical_table": "sales_fact",
+                    }
+                ],
+                "entities": [],
+                "relationships": [],
+                "metrics": [
+                    {
+                        "key": "sales_amount",
+                        "label": "销售额",
+                        "table_key": "sales_fact",
+                        "field": "Sales Amount",
+                        "aggregation": "sum",
+                        "supported_dimension_keys": ["school_type"],
+                    }
+                ],
+                "dimensions": [
+                    {
+                        "key": "school_type",
+                        "label": "学校类型",
+                        "table_key": "sales_fact",
+                        "field": "School Type",
+                        "kind": "categorical",
+                        "operators": ["eq", "in"],
+                    }
+                ],
+                "aliases": [],
+                "metric_versions": [],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    catalog = load_semantic_catalog("quoted_fields", base_dir=semantic_dir)
+    plan = build_query_execution_plan(
+        catalog=catalog,
+        semantic_query=SemanticQueryDraft(
+            analysis_type="group_by",
+            metric_key="sales_amount",
+            group_by_dimension_keys=["school_type"],
+            filters=[
+                {
+                    "dimension_key": "school_type",
+                    "operator": "eq",
+                    "value": "High School",
+                }
+            ],
+            time_range=None,
+        ),
+    )
+
+    assert 'SUM("Sales Amount") AS metric_value' in plan.sql
+    assert '"School Type" AS school_type' in plan.sql
+    assert '"School Type" = \'High School\'' in plan.sql

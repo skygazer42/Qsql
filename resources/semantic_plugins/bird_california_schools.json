@@ -1,0 +1,102 @@
+{
+  "dataset_id": "bird_california_schools",
+  "value_mappings": [
+    {
+      "dimension_key": "county_name",
+      "operator": "eq",
+      "terms": {
+        "Los Angeles County": "Los Angeles",
+        "los angeles county": "Los Angeles",
+        "Los Angeles": "Los Angeles",
+        "los angeles": "Los Angeles",
+        "Fresno County": "Fresno",
+        "fresno county": "Fresno",
+        "Fresno": "Fresno",
+        "fresno": "Fresno",
+        "Santa Clara County": "Santa Clara",
+        "santa clara county": "Santa Clara",
+        "Santa Clara": "Santa Clara",
+        "santa clara": "Santa Clara"
+      }
+    },
+    {
+      "dimension_key": "charter_flag",
+      "operator": "eq",
+      "terms": {
+        "charter schools": 1,
+        "charter school": 1,
+        "charter": 1,
+        "non-charter schools": 0,
+        "non-charter school": 0,
+        "non-charter": 0,
+        "non charter schools": 0,
+        "non charter": 0
+      }
+    },
+    {
+      "dimension_key": "school_status",
+      "operator": "eq",
+      "terms": {
+        "Active": "Active",
+        "active": "Active",
+        "Closed": "Closed",
+        "closed": "Closed",
+        "Merged": "Merged",
+        "merged": "Merged"
+      }
+    },
+    {
+      "dimension_key": "funding_type",
+      "operator": "eq",
+      "terms": {
+        "Directly funded": "Directly funded",
+        "directly funded": "Directly funded",
+        "direct-funded": "Directly funded",
+        "direct funded": "Directly funded",
+        "Locally funded": "Locally funded",
+        "locally funded": "Locally funded",
+        "local funded": "Locally funded"
+      }
+    },
+    {
+      "dimension_key": "district_type",
+      "operator": "eq",
+      "terms": {
+        "Unified School District": "Unified School District",
+        "unified school district": "Unified School District",
+        "Elementary School District": "Elementary School District",
+        "elementary school district": "Elementary School District",
+        "High School District": "High School District",
+        "high school district": "High School District"
+      }
+    },
+    {
+      "dimension_key": "school_type",
+      "operator": "eq",
+      "terms": {
+        "Elementary Schools (Public)": "Elementary Schools (Public)",
+        "elementary schools (public)": "Elementary Schools (Public)",
+        "High Schools (Public)": "High Schools (Public)",
+        "high schools (public)": "High Schools (Public)",
+        "K-12 Schools (Public)": "K-12 Schools (Public)",
+        "k-12 schools (public)": "K-12 Schools (Public)"
+      }
+    },
+    {
+      "dimension_key": "score_record_type",
+      "operator": "eq",
+      "terms": {
+        "school-level": "S",
+        "school level": "S",
+        "school-level scores": "S",
+        "school-level sat scores": "S",
+        "school-level sat score": "S",
+        "School-level": "S",
+        "district-level": "D",
+        "district level": "D",
+        "district-level scores": "D",
+        "District-level": "D"
+      }
+    }
+  ]
+}

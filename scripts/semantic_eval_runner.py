@@ -8,23 +8,29 @@ import json
 import os
 import sqlite3
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
+from pydantic import Field
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     # [CUSTOM] 支持 `python scripts/semantic_eval_runner.py` 直接运行。
     sys.path.insert(0, str(REPO_ROOT))
 
-from src.qsql.schemas import SemanticFilter, SemanticParseResponse, SemanticQueryRequest  # noqa: E402
+from src.qsql.schemas import (  # noqa: E402
+    SemanticFilter,
+    SemanticParseResponse,
+    SemanticQueryRequest,
+    ValidateRequest,
+)
 from src.qsql.semantic_service import SemanticQueryService  # noqa: E402
 
 
-@dataclass
-class EvalCase:
+class EvalCase(ValidateRequest):
+    """单条语义评测用例。"""
+
     id: str
     question: str
     level: str | None = None
@@ -32,11 +38,13 @@ class EvalCase:
     expect_status: str = "ready"
     expect_metric_key: str | None = None
     expect_group_by: list[str] | None = None
-    expect_filters: list[dict[str, Any]] = field(default_factory=list)
+    expect_filters: list[dict[str, Any]] = Field(default_factory=list)
+    expected_sql: str | None = None
 
 
-@dataclass
-class EvalResult:
+class EvalResult(ValidateRequest):
+    """单条语义评测结果。"""
+
     case_id: str
     question: str
     status: str
@@ -45,6 +53,8 @@ class EvalResult:
     category: str | None = None
     failure_reason: str | None = None
     row_count: int = 0
+    expected_row_count: int | None = None
+    ex_ok: bool | None = None
     sql: str | None = None
 
 
@@ -66,6 +76,7 @@ def load_cases(path: Path) -> list[EvalCase]:
                     expect_metric_key=payload.get("expect_metric_key"),
                     expect_group_by=payload.get("expect_group_by"),
                     expect_filters=payload.get("expect_filters") or [],
+                    expected_sql=payload.get("expected_sql"),
                 )
             )
     return cases
@@ -78,14 +89,53 @@ def _filter_matches(actual: SemanticFilter, expected: dict[str, Any]) -> bool:
     return True
 
 
+def _normalise_result_rows(
+    rows: list[dict[str, Any]],
+    *,
+    columns: list[str],
+) -> list[str]:
+    normalised_rows = []
+    for row in rows:
+        projected = {column: row.get(column) for column in columns}
+        normalised_rows.append(
+            json.dumps(projected, ensure_ascii=False, sort_keys=True, default=str)
+        )
+    return sorted(normalised_rows)
+
+
+def _result_sets_equivalent(
+    *,
+    actual_rows: list[dict[str, Any]],
+    expected_rows: list[dict[str, Any]],
+) -> bool:
+    # [CUSTOM] EX 对齐 BIRD/Spider 风格：按标准 SQL 的列投影比较，容忍预测 SQL 多 SELECT 辅助列。
+    expected_columns = sorted(
+        {column for row in expected_rows for column in row.keys()}
+    )
+    if not expected_columns:
+        return actual_rows == expected_rows
+
+    if any(
+        any(column not in actual_row for column in expected_columns)
+        for actual_row in actual_rows
+    ):
+        return False
+
+    return _normalise_result_rows(
+        actual_rows, columns=expected_columns
+    ) == _normalise_result_rows(expected_rows, columns=expected_columns)
+
+
 def evaluate_case(
     case: EvalCase,
     response: SemanticParseResponse,
     *,
     rows: list[dict[str, Any]] | None,
+    expected_rows: list[dict[str, Any]] | None = None,
 ) -> EvalResult:
     sql = response.execution_plan.sql if response.execution_plan else None
     row_count = len(rows or [])
+    expected_row_count = len(expected_rows) if expected_rows is not None else None
 
     if response.status != case.expect_status:
         return EvalResult(
@@ -97,6 +147,7 @@ def evaluate_case(
             ok=False,
             failure_reason="status_mismatch",
             row_count=row_count,
+            expected_row_count=expected_row_count,
             sql=sql,
         )
 
@@ -109,6 +160,7 @@ def evaluate_case(
             status=response.status,
             ok=True,
             row_count=row_count,
+            expected_row_count=expected_row_count,
             sql=sql,
         )
 
@@ -123,6 +175,7 @@ def evaluate_case(
             ok=False,
             failure_reason="missing_semantic_query",
             row_count=row_count,
+            expected_row_count=expected_row_count,
             sql=sql,
         )
 
@@ -136,6 +189,7 @@ def evaluate_case(
             ok=False,
             failure_reason="metric_mismatch",
             row_count=row_count,
+            expected_row_count=expected_row_count,
             sql=sql,
         )
 
@@ -151,6 +205,7 @@ def evaluate_case(
             ok=False,
             failure_reason="group_by_mismatch",
             row_count=row_count,
+            expected_row_count=expected_row_count,
             sql=sql,
         )
 
@@ -168,6 +223,7 @@ def evaluate_case(
                 ok=False,
                 failure_reason="filter_mismatch",
                 row_count=row_count,
+                expected_row_count=expected_row_count,
                 sql=sql,
             )
 
@@ -181,6 +237,40 @@ def evaluate_case(
             ok=False,
             failure_reason="missing_execution_plan",
             row_count=row_count,
+            expected_row_count=expected_row_count,
+            sql=sql,
+        )
+
+    if case.expected_sql:
+        if rows is None or expected_rows is None:
+            return EvalResult(
+                case_id=case.id,
+                question=case.question,
+                level=case.level,
+                category=case.category,
+                status=response.status,
+                ok=False,
+                failure_reason="missing_ex_rows",
+                row_count=row_count,
+                expected_row_count=expected_row_count,
+                ex_ok=False,
+                sql=sql,
+            )
+        ex_ok = _result_sets_equivalent(
+            actual_rows=rows,
+            expected_rows=expected_rows,
+        )
+        return EvalResult(
+            case_id=case.id,
+            question=case.question,
+            level=case.level,
+            category=case.category,
+            status=response.status,
+            ok=ex_ok,
+            failure_reason=None if ex_ok else "ex_mismatch",
+            row_count=row_count,
+            expected_row_count=expected_row_count,
+            ex_ok=ex_ok,
             sql=sql,
         )
 
@@ -194,6 +284,7 @@ def evaluate_case(
             ok=False,
             failure_reason="empty_result",
             row_count=row_count,
+            expected_row_count=expected_row_count,
             sql=sql,
         )
 
@@ -205,6 +296,7 @@ def evaluate_case(
         status=response.status,
         ok=True,
         row_count=row_count,
+        expected_row_count=expected_row_count,
         sql=sql,
     )
 
@@ -214,16 +306,27 @@ def _fetch_rows(
     response: SemanticParseResponse,
     *,
     row_limit: int,
+    apply_group_limit: bool = True,
 ) -> list[dict[str, Any]] | None:
     if response.execution_plan is None:
         return None
 
     sql = response.execution_plan.sql
-    if response.execution_plan.group_by_dimension_keys:
+    if apply_group_limit and response.execution_plan.group_by_dimension_keys:
         sql = f"SELECT * FROM ({sql}) ORDER BY metric_value DESC LIMIT ?"
         cursor = connection.execute(sql, (row_limit,))
     else:
         cursor = connection.execute(sql)
+    return [dict(row) for row in cursor.fetchall()]
+
+
+def _fetch_expected_rows(
+    connection: sqlite3.Connection,
+    case: EvalCase,
+) -> list[dict[str, Any]] | None:
+    if not case.expected_sql:
+        return None
+    cursor = connection.execute(case.expected_sql)
     return [dict(row) for row in cursor.fetchall()]
 
 
@@ -256,12 +359,27 @@ def run_evaluation(
                 response = service.prepare_query(
                     SemanticQueryRequest(dataset_id=dataset_id, question=case.question)
                 )
-                rows = (
-                    _fetch_rows(connection, response, row_limit=row_limit)
+                expected_rows = (
+                    _fetch_expected_rows(connection, case)
                     if connection is not None
                     else None
                 )
-                result = evaluate_case(case, response, rows=rows)
+                rows = (
+                    _fetch_rows(
+                        connection,
+                        response,
+                        row_limit=row_limit,
+                        apply_group_limit=case.expected_sql is None,
+                    )
+                    if connection is not None
+                    else None
+                )
+                result = evaluate_case(
+                    case,
+                    response,
+                    rows=rows,
+                    expected_rows=expected_rows,
+                )
             except Exception as exc:
                 result = EvalResult(
                     case_id=case.id,
@@ -289,6 +407,9 @@ def _count_results(results: list[EvalResult]) -> dict[str, int]:
             1 for result in results if result.status == "clarification"
         ),
         "error": sum(1 for result in results if result.status == "error"),
+        "ex_checked": sum(1 for result in results if result.ex_ok is not None),
+        "ex_ok": sum(1 for result in results if result.ex_ok is True),
+        "ex_failed": sum(1 for result in results if result.ex_ok is False),
     }
 
 
@@ -323,7 +444,8 @@ def _print_results(results: list[EvalResult], *, run_label: str | None = None) -
         marker = "PASS" if result.ok else "FAIL"
         print(
             f"[{marker}] {result.case_id} status={result.status} "
-            f"rows={result.row_count} reason={result.failure_reason or '-'}"
+            f"rows={result.row_count} ex={result.ex_ok} "
+            f"reason={result.failure_reason or '-'}"
         )
     if run_label:
         print(f"\nRUN {run_label}")

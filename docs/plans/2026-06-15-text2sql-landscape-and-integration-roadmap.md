@@ -1,6 +1,6 @@
 # 2026-06-15 Text2SQL 主流方案调研与 QSQL 集成路线图
 
-- 状态：实施中（P0-1 / P0-2 / P1-1 最小实现已落地）
+- 状态：实施中（P0-1 / P0-2 / P1-1 / P1-2 最小实现已落地）
 - 范围：基于主流开源 text2sql 项目与 2024–2026 学术进展，规划可集成进 QSQL 或用于优化的方向。
 - 结论先行：**QSQL 当前的「语义层 + LLM 受控解析」路线与业界公认的可靠方向一致，不需要推翻；本路线图聚焦补齐已被验证的几块短板。**
 
@@ -37,7 +37,7 @@
 | P0-1 | 受控多表 join（实体/关系图） | 已完成最小实现：`entities/relationships` + builder join 规划 | 完全契合 |
 | P0-2 | 多候选投票 + 执行反馈（适配 draft 范式） | 已完成最小实现：draft 投票 + 空结果候选切换 | 契合（投在 draft 层） |
 | P1-1 | value retrieval（列值索引） | 已完成最小实现：metadata value_mapping / 样例值召回 + Pydantic 候选契约 | 契合 |
-| P1-2 | 评测对齐 BIRD / Spider 风格 | `semantic_eval_runner.py` 已是雏形 | 契合 |
+| P1-2 | 评测对齐 BIRD / Spider 风格 | 已完成最小实现：可选 expected_sql + EX 结果集等价统计 | 契合 |
 | P1-3 | 澄清升级：多选题 + 信息增益 | `semantic_service.py` 开放式澄清 | 契合 |
 | P2-1 | 相对时间解析（上季度 / 近 30 天） | `semantic_postprocessor.py` 正则较弱 | 契合 |
 | P2-2 | 多指标查询 | `_mark_multi_metric_questions` 直接转澄清 | 契合 |
@@ -213,3 +213,12 @@
 - `SemanticPostprocessor` 在 plugin 映射之后接入 value retriever，可自动补全或校正 filter value。
 - `/api/v0` 默认语义链路已挂接 metadata store 的值召回，不需要把业务值写死进底座。
 - 变更记录：`docs/change-records/2026-06-15-value-retrieval-p1-1.md`
+
+### 2026-06-15 P1-2 已落地（最小实现）
+
+- `semantic_eval_runner` 的 `EvalCase` / `EvalResult` 已改为 Pydantic 模型。
+- 评测用例支持可选 `expected_sql`，有 SQLite 执行库时会同时执行预测 SQL 与标准 SQL。
+- EX 比对按标准 SQL 输出列投影比较，容忍预测 SQL 多 SELECT 辅助列，并保持行顺序无关。
+- summary 输出 `ex_checked` / `ex_ok` / `ex_failed`，仍保留 level/category 分层统计。
+- `online_retail_extended.jsonl` 已补 L1/L2/L3 各一条标准 SQL 样本。
+- 变更记录：`docs/change-records/2026-06-15-semantic-eval-ex-p1-2.md`

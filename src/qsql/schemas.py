@@ -423,12 +423,22 @@ class SemanticQueryDraft(ValidateRequest):
 
     analysis_type: str = Field(min_length=1)
     metric_key: str = Field(min_length=1)
+    metric_keys: list[str] = Field(default_factory=list)
     group_by_dimension_keys: list[str] = Field(default_factory=list)
     filters: list[SemanticFilter] = Field(default_factory=list)
     time_range: Optional[SemanticTimeRange] = None
     metric_version_key: Optional[str] = None
     needs_clarification: bool = False
     clarification_question: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _sync_metric_keys(self) -> "SemanticQueryDraft":
+        # [CUSTOM] 兼容旧单指标字段；多指标查询用 metric_keys 表达同粒度指标集合。
+        if not self.metric_keys:
+            self.metric_keys = [self.metric_key]
+        elif self.metric_key not in self.metric_keys:
+            self.metric_keys = [self.metric_key, *self.metric_keys]
+        return self
 
 
 class QueryParameter(ValidateRequest):
@@ -449,7 +459,18 @@ class QueryExecutionPlan(ValidateRequest):
     analysis_type: str = Field(min_length=1)
     metric_key: str = Field(min_length=1)
     metric_label: str = Field(min_length=1)
+    metric_keys: list[str] = Field(default_factory=list)
+    metric_labels: list[str] = Field(default_factory=list)
     group_by_dimension_keys: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _sync_metric_lists(self) -> "QueryExecutionPlan":
+        # [CUSTOM] 保持单指标响应兼容，同时给多指标结果暴露完整指标列表。
+        if not self.metric_keys:
+            self.metric_keys = [self.metric_key]
+        if not self.metric_labels:
+            self.metric_labels = [self.metric_label]
+        return self
 
 
 class SemanticQueryCandidate(ValidateRequest):

@@ -220,6 +220,10 @@ class SemanticPostprocessor:
         if len(matched_metric_keys) <= 1:
             return
 
+        selected_metric_keys = set(semantic_query.metric_keys or [semantic_query.metric_key])
+        if matched_metric_keys.issubset(selected_metric_keys):
+            return
+
         semantic_query.needs_clarification = True
         semantic_query.clarification_question = "当前一次只支持查询一个指标，请选择一个指标。"
 

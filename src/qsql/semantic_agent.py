@@ -35,8 +35,9 @@ class SemanticQueryAgent:
 1) 只返回结构化 JSON。
 2) 如果用户问题缺少必要时间范围或存在明确歧义，设置 needs_clarification=true。
 3) 如果需要澄清，clarification_question 必须是一个可以直接问用户的问题。
-4) 除非候选目录中明确存在，不要发明新的 metric_key、dimension_key、metric_version_key。
-5) 当前 analysis_type 仅允许 summary / group_by / trend。
+4) 除非候选目录中明确存在，不要发明新的 metric_key、metric_keys、dimension_key、metric_version_key。
+5) 如果用户明确要求同一粒度下多个指标，metric_key 填第一个指标，metric_keys 填全部指标。
+6) 当前 analysis_type 仅允许 summary / group_by / trend。
 """,
             model_settings={"temperature": temperature},
         )

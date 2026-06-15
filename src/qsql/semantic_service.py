@@ -113,6 +113,7 @@ class SemanticQueryService:
         payload = {
             "analysis_type": semantic_query.analysis_type,
             "metric_key": semantic_query.metric_key,
+            "metric_keys": semantic_query.metric_keys,
             "group_by_dimension_keys": semantic_query.group_by_dimension_keys,
             "filters": filters,
             "time_range": (

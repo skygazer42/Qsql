@@ -199,6 +199,89 @@ def test_build_query_execution_plan_builds_summary_sql(tmp_path: Path):
     assert "order_date <=" in plan.sql
 
 
+def test_build_query_execution_plan_builds_same_grain_multi_metric_sql(
+    tmp_path: Path,
+):
+    semantic_dir = _write_catalog(tmp_path)
+    catalog = load_semantic_catalog("sales", base_dir=semantic_dir)
+    draft = SemanticQueryDraft(
+        analysis_type="group_by",
+        metric_key="order_amount",
+        metric_keys=["order_amount", "order_count"],
+        group_by_dimension_keys=["city"],
+        filters=[],
+        time_range=SemanticTimeRange(
+            dimension_key="order_date",
+            start="2026-01-01",
+            end="2026-01-31",
+        ),
+    )
+
+    plan = build_query_execution_plan(catalog=catalog, semantic_query=draft)
+
+    assert "city_name AS city" in plan.sql
+    assert "SUM(amount) AS order_amount" in plan.sql
+    assert "COUNT(DISTINCT order_id) AS order_count" in plan.sql
+    assert "GROUP BY city_name" in plan.sql
+    assert plan.metric_key == "order_amount"
+    assert plan.metric_keys == ["order_amount", "order_count"]
+    assert plan.metric_labels == ["订单金额", "订单数"]
+
+
+def test_build_query_execution_plan_rejects_multi_metric_across_tables(
+    tmp_path: Path,
+):
+    semantic_dir = _write_catalog(tmp_path)
+    catalog_path = semantic_dir / "sales.json"
+    payload = json.loads(catalog_path.read_text(encoding="utf-8"))
+    payload["tables"].append(
+        {
+            "key": "refund_wide",
+            "label": "退款宽表",
+            "physical_table": "refund_orders",
+            "default_time_dimension_key": "refund_date",
+        }
+    )
+    payload["metrics"].append(
+        {
+            "key": "refund_amount",
+            "label": "退款金额",
+            "table_key": "refund_wide",
+            "field": "refund_amount",
+            "aggregation": "sum",
+            "supported_dimension_keys": ["refund_date"],
+            "default_time_dimension_key": "refund_date",
+        }
+    )
+    payload["dimensions"].append(
+        {
+            "key": "refund_date",
+            "label": "退款日期",
+            "table_key": "refund_wide",
+            "field": "refund_date",
+            "kind": "time",
+            "operators": ["between", "gte", "lte"],
+        }
+    )
+    catalog_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    catalog = load_semantic_catalog("sales", base_dir=semantic_dir)
+    draft = SemanticQueryDraft(
+        analysis_type="summary",
+        metric_key="order_amount",
+        metric_keys=["order_amount", "refund_amount"],
+        group_by_dimension_keys=[],
+        filters=[],
+        time_range=SemanticTimeRange(
+            dimension_key="order_date",
+            start="2026-01-01",
+            end="2026-01-31",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="多指标查询要求所有指标来自同一语义表"):
+        build_query_execution_plan(catalog=catalog, semantic_query=draft)
+
+
 def test_build_query_execution_plan_rejects_unsupported_dimension(tmp_path: Path):
     semantic_dir = _write_catalog(tmp_path)
     catalog = load_semantic_catalog("sales", base_dir=semantic_dir)

@@ -346,6 +346,42 @@ def test_postprocessor_marks_multi_metric_question_for_clarification():
     assert repaired.clarification_question == "当前一次只支持查询一个指标，请选择一个指标。"
 
 
+def test_postprocessor_keeps_explicit_multi_metric_draft_ready():
+    catalog = _catalog()
+    catalog.metrics.append(
+        catalog.metrics[0].model_copy(
+            update={"key": "quantity", "label": "销量", "field": "quantity"}
+        )
+    )
+    catalog.aliases.append(
+        catalog.aliases[0].model_copy(
+            update={"alias": "销量", "target_type": "metric", "target_key": "quantity"}
+        )
+    )
+    postprocessor = SemanticPostprocessor(plugin_base_dir=Path("/missing"))
+    query = SemanticQueryDraft(
+        analysis_type="summary",
+        metric_key="amount",
+        metric_keys=["amount", "quantity"],
+        group_by_dimension_keys=[],
+        filters=[],
+        time_range=SemanticTimeRange(
+            dimension_key="order_date",
+            start="2026-01-01",
+            end="2026-12-31",
+        ),
+    )
+
+    repaired = postprocessor.repair(
+        question="2026年销售额和销量分别是多少？",
+        catalog=catalog,
+        semantic_query=query,
+    )
+
+    assert repaired.needs_clarification is False
+    assert repaired.metric_keys == ["amount", "quantity"]
+
+
 def test_postprocessor_loads_dataset_value_mapping_plugin(tmp_path: Path):
     plugin_dir = tmp_path / "plugins"
     plugin_dir.mkdir()

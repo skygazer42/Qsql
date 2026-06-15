@@ -251,9 +251,25 @@ def build_query_execution_plan(
     relationships = _relationship_map(catalog)
     versions = _version_map(catalog)
 
-    metric = metrics.get(semantic_query.metric_key)
-    if metric is None:
-        raise ValueError(f"指标未定义: {semantic_query.metric_key}")
+    metric_keys = list(dict.fromkeys(semantic_query.metric_keys or [semantic_query.metric_key]))
+    resolved_metrics: list[SemanticMetricDefinition] = []
+    for metric_key in metric_keys:
+        resolved_metric = metrics.get(metric_key)
+        if resolved_metric is None:
+            raise ValueError(f"指标未定义: {metric_key}")
+        resolved_metrics.append(resolved_metric)
+
+    metric = resolved_metrics[0]
+    if len(resolved_metrics) > 1 and semantic_query.metric_version_key:
+        raise ValueError("多指标查询暂不支持单一 metric_version_key")
+
+    for resolved_metric in resolved_metrics[1:]:
+        if resolved_metric.table_key != metric.table_key:
+            raise ValueError(
+                "多指标查询要求所有指标来自同一语义表: "
+                f"{metric.key}->{metric.table_key}, "
+                f"{resolved_metric.key}->{resolved_metric.table_key}"
+            )
 
     if semantic_query.time_range is None:
         raise ValueError("缺少时间范围，当前仅支持带时间范围的受控查询")
@@ -298,8 +314,12 @@ def build_query_execution_plan(
         dimension = dimensions.get(dimension_key)
         if dimension is None:
             raise ValueError(f"维度未定义: {dimension_key}")
-        if metric.supported_dimension_keys and dimension_key not in metric.supported_dimension_keys:
-            raise ValueError(f"指标不支持维度: {dimension_key}")
+        for resolved_metric in resolved_metrics:
+            if (
+                resolved_metric.supported_dimension_keys
+                and dimension_key not in resolved_metric.supported_dimension_keys
+            ):
+                raise ValueError(f"指标不支持维度: {resolved_metric.key} -> {dimension_key}")
         resolved_group_dimensions.append(dimension)
 
     required_table_keys = {
@@ -369,15 +389,23 @@ def build_query_execution_plan(
         select_dimensions.append(f"{field_ref} AS {dimension.key}")
         group_dimensions.append(field_ref)
 
-    aggregation_expr = _aggregation_expr(
-        metric,
-        _field_ref(
-            table_key=metric.table_key,
-            field=metric.field,
-            table_aliases=table_aliases,
-        ),
-    )
-    select_parts = [*select_dimensions, f"{aggregation_expr} AS metric_value"]
+    metric_select_parts = []
+    for resolved_metric in resolved_metrics:
+        aggregation_expr = _aggregation_expr(
+            resolved_metric,
+            _field_ref(
+                table_key=resolved_metric.table_key,
+                field=resolved_metric.field,
+                table_aliases=table_aliases,
+            ),
+        )
+        metric_alias = (
+            "metric_value"
+            if len(resolved_metrics) == 1
+            else _safe_identifier(resolved_metric.key)
+        )
+        metric_select_parts.append(f"{aggregation_expr} AS {metric_alias}")
+    select_parts = [*select_dimensions, *metric_select_parts]
     anchor_table = _safe_identifier(table_definition.physical_table)
     if join_steps:
         sql = f"SELECT {', '.join(select_parts)} FROM {anchor_table} AS {table_aliases[metric.table_key]}"
@@ -417,5 +445,7 @@ def build_query_execution_plan(
         analysis_type=semantic_query.analysis_type,
         metric_key=metric.key,
         metric_label=metric.label,
+        metric_keys=[item.key for item in resolved_metrics],
+        metric_labels=[item.label for item in resolved_metrics],
         group_by_dimension_keys=semantic_query.group_by_dimension_keys,
     )

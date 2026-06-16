@@ -49,6 +49,7 @@ class SemanticQueryAgent:
 4) 除非候选目录中明确存在，不要发明新的 metric_key、metric_keys、dimension_key、metric_version_key。
 5) 如果用户明确要求同一粒度下多个指标，metric_key 填第一个指标，metric_keys 填全部指标。
 6) 当前 analysis_type 仅允许 summary / group_by / trend。
+7) 如果用户要求 Top N、前N名、最高/最多/最大排名，填写 order_by_metric="desc" 和 limit=N；如果要求最低/最少/最小排名，填写 order_by_metric="asc" 和 limit=N。
 """,
             model_settings={"temperature": temperature},
         )

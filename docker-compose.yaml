@@ -1,11 +1,11 @@
-version: "3.10"
 services:
   app:
-    image: kd-vanna:0.0.3
-    container_name: kd-vanna
+    image: qsql:0.7.9
+    container_name: qsql
     environment:
       TZ: "Asia/Shanghai"
       LOG_LEVEL: "INFO"
+      QSQL_ALLOW_UNAUTHENTICATED: "${QSQL_ALLOW_UNAUTHENTICATED:-true}"
     env_file:
       - .env
     build:
@@ -15,4 +15,16 @@ services:
       - ./resources:/app/resources
     ports:
       - "5005:5005"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5005/api/v0/qsql/datasets', timeout=5).read()",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     restart: unless-stopped

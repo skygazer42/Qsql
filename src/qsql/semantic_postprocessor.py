@@ -420,6 +420,80 @@ class SemanticPostprocessor:
         if matched_dimension_keys:
             semantic_query.group_by_dimension_keys = matched_dimension_keys
 
+    @staticmethod
+    def _chinese_number_to_int(text: str) -> int | None:
+        numerals = {
+            "零": 0,
+            "一": 1,
+            "二": 2,
+            "两": 2,
+            "三": 3,
+            "四": 4,
+            "五": 5,
+            "六": 6,
+            "七": 7,
+            "八": 8,
+            "九": 9,
+        }
+        text = text.strip()
+        if not text:
+            return None
+        if text.isdigit():
+            return int(text)
+        if text == "十":
+            return 10
+        if "十" in text:
+            left, _, right = text.partition("十")
+            tens = numerals.get(left, 1 if left == "" else None)
+            ones = numerals.get(right, 0 if right == "" else None)
+            if tens is None or ones is None:
+                return None
+            return tens * 10 + ones
+        if len(text) == 1:
+            return numerals.get(text)
+        return None
+
+    @classmethod
+    def _extract_rank_limit(cls, question: str) -> int | None:
+        number_pattern = r"(\d{1,3}|[零一二两三四五六七八九十]{1,3})"
+        patterns = (
+            rf"(?:前|top\s*)\s*{number_pattern}\s*(?:名|个|条|位)?",
+            rf"(?:最高|最多|最大|最低|最少|最小)\s*{number_pattern}\s*(?:名|个|条|位)?",
+            rf"{number_pattern}\s*(?:名|个|条|位)?\s*(?:最高|最多|最大|最低|最少|最小)",
+        )
+        for pattern in patterns:
+            match = re.search(pattern, question, flags=re.IGNORECASE)
+            if match is None:
+                continue
+            value = cls._chinese_number_to_int(match.group(1))
+            if value is not None and 1 <= value <= 1000:
+                return value
+        return None
+
+    @staticmethod
+    def _rank_direction(question: str) -> str | None:
+        if re.search(r"(?:最低|最少|最小|bottom|倒数|后\s*\d)", question, flags=re.IGNORECASE):
+            return "asc"
+        if re.search(r"(?:前\s*\d|前[一二两三四五六七八九十]|top|最高|最多|最大)", question, flags=re.IGNORECASE):
+            return "desc"
+        return None
+
+    @classmethod
+    def _repair_metric_ranking(
+        cls,
+        *,
+        question: str,
+        semantic_query: SemanticQueryDraft,
+    ) -> None:
+        if not semantic_query.group_by_dimension_keys:
+            return
+        rank_limit = cls._extract_rank_limit(question)
+        direction = cls._rank_direction(question)
+        if rank_limit is not None and semantic_query.limit is None:
+            semantic_query.limit = rank_limit
+        if direction is not None and semantic_query.order_by_metric is None:
+            semantic_query.order_by_metric = direction
+
     def _plugin_path(self, dataset_id: str) -> Path:
         return self._plugin_base_dir / f"{dataset_id}.json"
 
@@ -644,6 +718,10 @@ class SemanticPostprocessor:
             question=question,
             catalog=catalog,
             metric=metric,
+            semantic_query=semantic_query,
+        )
+        self._repair_metric_ranking(
+            question=question,
             semantic_query=semantic_query,
         )
         self._normalise_filter_operators(semantic_query)

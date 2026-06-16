@@ -467,6 +467,7 @@ def build_query_execution_plan(
         where_clauses.append(f"{field_ref} IS NOT NULL")
 
     metric_select_parts = []
+    metric_aliases = []
     for resolved_metric in resolved_metrics:
         aggregation_expr = _aggregation_expr(
             resolved_metric,
@@ -481,6 +482,7 @@ def build_query_execution_plan(
             if len(resolved_metrics) == 1
             else _safe_identifier(resolved_metric.key)
         )
+        metric_aliases.append(metric_alias)
         metric_select_parts.append(f"{aggregation_expr} AS {metric_alias}")
     select_parts = [*select_dimensions, *metric_select_parts]
     anchor_table = _safe_identifier(table_definition.physical_table)
@@ -512,7 +514,18 @@ def build_query_execution_plan(
         sql += " WHERE " + " AND ".join(where_clauses)
     if group_dimensions:
         sql += " GROUP BY " + ", ".join(group_dimensions)
-        sql += " ORDER BY " + ", ".join(group_dimensions)
+    order_by_parts = []
+    if semantic_query.order_by_metric:
+        direction = semantic_query.order_by_metric.upper()
+        if direction not in {"ASC", "DESC"}:
+            raise ValueError("order_by_metric 仅支持 asc 或 desc")
+        order_by_parts.append(f"{metric_aliases[0]} {direction}")
+    if group_dimensions:
+        order_by_parts.extend(group_dimensions)
+    if order_by_parts:
+        sql += " ORDER BY " + ", ".join(order_by_parts)
+    if semantic_query.limit is not None:
+        sql += f" LIMIT {int(semantic_query.limit)}"
 
     return QueryExecutionPlan(
         dataset_id=catalog.dataset_id,
@@ -525,4 +538,6 @@ def build_query_execution_plan(
         metric_keys=[item.key for item in resolved_metrics],
         metric_labels=[item.label for item in resolved_metrics],
         group_by_dimension_keys=semantic_query.group_by_dimension_keys,
+        order_by_metric=semantic_query.order_by_metric,
+        limit=semantic_query.limit,
     )

@@ -282,6 +282,30 @@ def test_postprocessor_repairs_multiple_explicit_group_by_dimensions():
     assert repaired.group_by_dimension_keys == ["region", "order_month"]
 
 
+def test_postprocessor_repairs_top_n_metric_ranking():
+    postprocessor = SemanticPostprocessor(plugin_base_dir=Path("/missing"))
+    query = SemanticQueryDraft(
+        analysis_type="group_by",
+        metric_key="amount",
+        group_by_dimension_keys=["region"],
+        filters=[],
+        time_range=SemanticTimeRange(
+            dimension_key="order_date",
+            start="2026-01-01",
+            end="2026-12-31",
+        ),
+    )
+
+    repaired = postprocessor.repair(
+        question="2026年各区域销售额前5名",
+        catalog=_catalog(),
+        semantic_query=query,
+    )
+
+    assert repaired.order_by_metric == "desc"
+    assert repaired.limit == 5
+
+
 def test_postprocessor_normalizes_symbolic_operator_with_suffix():
     postprocessor = SemanticPostprocessor(plugin_base_dir=Path("/missing"))
     query = SemanticQueryDraft(

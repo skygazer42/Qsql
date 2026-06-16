@@ -1,20 +1,133 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/brand/qsql-mark.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link href="./css2.css" rel="stylesheet">
-    <script src="https://cdn.plot.ly/plotly-latest.min.js" type="text/javascript"></script>
-    <script src="./plotly-latest.min.js" type="text/javascript"></script>
-    <title>Vanna.AI</title>
-    <script type="module" crossorigin src="/assets/index-d29524f4.js"></script>
-    <!-- [CUSTOM] 为 SQL 训练弹窗补充问题输入框；保留官方打包 bundle 不直接改写。 -->
-    <script src="/custom-train-question.js?v=20260515-plotly-alias"></script>
-    <link rel="stylesheet" href="/assets/index-b1a5a2f1.css">
+    <link rel="icon" type="image/svg+xml" href="/brand/qsql-mark.svg" />
+    <link rel="stylesheet" href="/qsql-assistant.css" />
+    <title>QSQL 多表问答工作台</title>
   </head>
-  <body class="bg-white dark:bg-slate-900">
-    <div id="app"></div>
-    
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img src="/brand/qsql-mark.svg" alt="QSQL" />
+          <div>
+            <strong>QSQL</strong>
+            <span>受控多表 SQL 问答</span>
+          </div>
+        </div>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <span>Dataset</span>
+            <strong>语义数据集</strong>
+          </div>
+          <select id="datasetSelect" class="control"></select>
+          <div id="datasetMeta" class="dataset-meta">
+            正在加载语义目录...
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <span>Scope</span>
+            <strong>当前可问范围</strong>
+          </div>
+          <div id="semanticScope" class="semantic-scope"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <span>Access</span>
+            <strong>接口访问</strong>
+          </div>
+          <input id="apiKeyInput" class="control" type="password" placeholder="X-API-KEY，未配置可留空" />
+          <button id="saveApiKeyButton" class="ghost-button" type="button">保存访问密钥</button>
+        </section>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Semantic SQL Assistant</p>
+            <h1>用业务问题生成可审计 SQL</h1>
+          </div>
+          <div class="status-pill" id="serviceStatus">连接检查中</div>
+        </header>
+
+        <section class="hero-panel">
+          <div>
+            <h2>多表联查由语义目录控制，模型只负责理解问题。</h2>
+            <p>
+              选择数据集后直接提问，系统会解析指标、维度、过滤条件和时间范围，
+              只通过已声明关系生成 JOIN，并返回 SQL、结果表与阶段耗时。
+            </p>
+          </div>
+          <div class="hero-metrics">
+            <div><span id="datasetCount">0</span><small>数据集</small></div>
+            <div><span id="relationshipCount">0</span><small>关系路径</small></div>
+            <div><span id="metricCount">0</span><small>指标</small></div>
+          </div>
+        </section>
+
+        <section class="query-grid">
+          <div class="query-panel">
+            <div class="section-title">
+              <span>Ask</span>
+              <h2>业务问题</h2>
+            </div>
+            <div id="examples" class="examples"></div>
+            <textarea
+              id="questionInput"
+              class="question-input"
+              rows="5"
+              placeholder="例如：按客户区域统计 1998 年贷款金额合计"
+            ></textarea>
+            <div class="query-actions">
+              <button id="askButton" class="primary-button" type="button">生成 SQL 并查询</button>
+              <button id="clearButton" class="ghost-button" type="button">清空</button>
+            </div>
+          </div>
+
+          <div class="sql-panel">
+            <div class="section-title">
+              <span>SQL</span>
+              <h2>受控生成结果</h2>
+            </div>
+            <pre id="sqlOutput" class="sql-output">等待问题输入...</pre>
+            <div id="timingStrip" class="timing-strip"></div>
+          </div>
+        </section>
+
+        <section class="result-panel">
+          <div class="section-title">
+            <span>Result</span>
+            <h2>查询结果</h2>
+          </div>
+          <div id="answerSummary" class="answer-summary">结果会显示在这里。</div>
+          <div class="table-wrap">
+            <table id="resultTable" class="result-table">
+              <thead></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+
+      <aside class="assistant-dock">
+        <div class="dock-header">
+          <span>QSQL Assistant</span>
+          <strong id="dockDataset">未选择</strong>
+        </div>
+        <div id="chatLog" class="chat-log"></div>
+        <form id="dockForm" class="dock-form">
+          <input id="dockInput" type="text" placeholder="问一个多表统计问题" />
+          <button type="submit">发送</button>
+        </form>
+      </aside>
+    </div>
+
+    <script src="/qsql-assistant.js"></script>
   </body>
 </html>

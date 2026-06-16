@@ -1,5 +1,6 @@
 import importlib
 import json
+import sqlite3
 import sys
 from pathlib import Path
 
@@ -125,6 +126,71 @@ def test_search_v0_uses_semantic_service(monkeypatch, tmp_path: Path):
     assert payload["data"]["df"] == '[{"metric_value":1}]'
     assert captured_sql == ["SELECT 1 AS metric_value"]
     assert fake_service.feedback_requests[0].dataset_id == "sales"
+
+
+def test_qsql_assistant_ask_returns_sql_and_rows(monkeypatch, tmp_path: Path):
+    app_module = _load_app_module(monkeypatch, tmp_path)
+    fake_service = _FakeSemanticService()
+    app_module.__semantic_query_service = fake_service
+    app_module.vn.generate_sql = lambda *args, **kwargs: (_ for _ in ()).throw(
+        AssertionError("old vn.generate_sql should not be called")
+    )
+    captured_sql = []
+
+    def _fake_run_sql(*, sql):
+        captured_sql.append(sql)
+        return pd.DataFrame([{"metric_value": 1, "region": "华东"}])
+
+    app_module.vn.run_sql = _fake_run_sql
+
+    response = app_module.app.test_client().post(
+        "/api/v0/qsql/ask",
+        json={"dataset_id": "sales", "question": "成交金额是多少"},
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["type"] == "qsql_answer"
+    assert payload["status"] == "success"
+    assert payload["dataset_id"] == "sales"
+    assert payload["sql"] == "SELECT 1 AS metric_value"
+    assert payload["columns"] == ["metric_value", "region"]
+    assert payload["rows"] == [{"metric_value": 1, "region": "华东"}]
+    assert payload["row_count"] == 1
+    assert payload["timings"]["catalog_load_ms"] == 1
+    assert captured_sql == ["SELECT 1 AS metric_value"]
+
+
+def test_qsql_assistant_lists_semantic_datasets(monkeypatch, tmp_path: Path):
+    app_module = _load_app_module(monkeypatch, tmp_path)
+
+    response = app_module.app.test_client().get("/api/v0/qsql/datasets")
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["type"] == "qsql_dataset_list"
+    datasets = {item["dataset_id"]: item for item in payload["datasets"]}
+    assert "bird_financial" in datasets
+    assert datasets["bird_financial"]["relationship_count"] > 0
+    assert datasets["bird_financial"]["metric_count"] > 0
+
+
+def test_app_connects_sqlite_when_sqlite_db_path_is_configured(monkeypatch, tmp_path: Path):
+    sqlite_path = tmp_path / "demo.sqlite3"
+    with sqlite3.connect(sqlite_path) as conn:
+        conn.execute("CREATE TABLE demo (value INTEGER)")
+        conn.execute("INSERT INTO demo VALUES (7)")
+
+    monkeypatch.setenv("SQLITE_DB_PATH", str(sqlite_path))
+    monkeypatch.delenv("MYSQL_HOST", raising=False)
+    monkeypatch.delenv("MYSQL_DBNAME", raising=False)
+    monkeypatch.delenv("MYSQL_USER", raising=False)
+    monkeypatch.delenv("MYSQL_PASSWORD", raising=False)
+    app_module = _load_app_module(monkeypatch, tmp_path)
+
+    assert app_module.vn.run_sql_is_set is True
+    df = app_module.vn.run_sql("SELECT value FROM demo")
+    assert df.to_dict(orient="records") == [{"value": 7}]
 
 
 def test_app_no_longer_exposes_v1_semantic_routes(monkeypatch, tmp_path: Path):

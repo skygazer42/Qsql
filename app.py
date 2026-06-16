@@ -1,4 +1,5 @@
 import hashlib
+import json
 import logging
 import os
 import time
@@ -27,6 +28,8 @@ from src.qsql.schemas import (
     TrainRequest,
     ValidateRequest,
 )
+
+_qsql_allow_unauthenticated_was_explicit = "QSQL_ALLOW_UNAUTHENTICATED" in os.environ
 
 load_dotenv()
 os.environ["CHROMA_PATH"] = setting.DB_DIR  # "./resources/db"
@@ -65,6 +68,10 @@ from src.server.use_mysql_api import pymysql_bp  # noqa: E402
 from src.qsql.local import LocalContext_OpenAICompatible  # noqa: E402
 from src.qsql.metadata_scheduler import start_metadata_sync_scheduler  # noqa: E402
 from src.qsql.observability import StructuredEventLogger  # noqa: E402
+from src.qsql.semantic_catalog import (
+    DEFAULT_SEMANTIC_DIR,
+    load_semantic_catalog,
+)  # noqa: E402
 from src.qsql.semantic_postprocessor import SemanticPostprocessor  # noqa: E402
 from src.qsql.semantic_service import SemanticQueryService  # noqa: E402
 from src.qsql.value_retriever import MetadataValueRetriever  # noqa: E402
@@ -214,6 +221,11 @@ def _build_dataframe_response(request_id: str, df) -> DataFrameResponse:
     return DataFrameResponse(id=request_id, df=df.to_json(orient="records"))
 
 
+def _dataframe_to_records(df) -> list[dict[str, Any]]:
+    # [CUSTOM] 给 QSQL 专用前端返回原生 JSON 行，避免前端再解析 df 字符串。
+    return json.loads(df.to_json(orient="records", date_format="iso", force_ascii=False))
+
+
 def _load_app_config() -> dict[str, Any]:
     # [CUSTOM] 用 Pydantic 校验环境变量映射后的配置，约束数据范围与必填项。
     try:
@@ -307,9 +319,16 @@ __mysql_config = {
     "password": os.environ.get("MYSQL_PASSWORD", ""),
     "port": int(os.environ.get("MYSQL_PORT", 3389)),
 }
+__sqlite_db_path = os.environ.get("SQLITE_DB_PATH", "").strip()
 
 if all(__mysql_config.values()):
     vn.connect_to_mysql(**__mysql_config)
+elif __sqlite_db_path:
+    # [CUSTOM] Docker/本地演示默认走仓库内 SQLite 数据，避免没有 MySQL 时服务只能生成不能执行。
+    sqlite_path = __sqlite_db_path
+    if not os.path.isabs(sqlite_path):
+        sqlite_path = os.path.join(setting.BASE_DIR, sqlite_path)
+    vn.connect_to_sqlite(sqlite_path)
 
 __metadata_store = get_metadata_store()
 __semantic_query_service = SemanticQueryService.from_model_config(
@@ -333,6 +352,8 @@ __metadata_sync_scheduler = start_metadata_sync_scheduler(store=__metadata_store
 api_key = os.getenv("SECRET_ACCESS_KEY", "")
 # [CUSTOM] 默认收紧 API 访问；本地无鉴权调试必须显式声明，避免部署时静默裸奔。
 allow_unauthenticated = (
+    _qsql_allow_unauthenticated_was_explicit
+    and
     os.getenv("QSQL_ALLOW_UNAUTHENTICATED", "").strip().lower()
     in {"1", "true", "yes", "on"}
 )
@@ -749,6 +770,197 @@ def delete_question_history():
     id = request_model.id
     cache.delete(id)
     return jsonify({"type": "delete_question_history"})
+
+
+@app.route("/api/v0/qsql/datasets", methods=["GET"])
+def qsql_list_datasets():
+    """列出前端可选择的数据集语义目录。"""
+    datasets: list[dict[str, Any]] = []
+    for catalog_path in sorted(DEFAULT_SEMANTIC_DIR.glob("*.json")):
+        try:
+            catalog = load_semantic_catalog(catalog_path.stem)
+        except Exception as exc:
+            datasets.append(
+                {
+                    "dataset_id": catalog_path.stem,
+                    "valid": False,
+                    "error": str(exc),
+                    "table_count": 0,
+                    "metric_count": 0,
+                    "dimension_count": 0,
+                    "relationship_count": 0,
+                }
+            )
+            continue
+
+        datasets.append(
+            {
+                "dataset_id": catalog.dataset_id,
+                "valid": True,
+                "catalog_version": catalog.catalog_version,
+                "table_count": len(catalog.tables),
+                "metric_count": len(catalog.metrics),
+                "dimension_count": len(catalog.dimensions),
+                "relationship_count": len(catalog.relationships),
+                "sample_metrics": [
+                    {"key": metric.key, "label": metric.label}
+                    for metric in catalog.metrics[:4]
+                ],
+                "sample_dimensions": [
+                    {"key": dimension.key, "label": dimension.label}
+                    for dimension in catalog.dimensions[:6]
+                ],
+            }
+        )
+    return jsonify({"type": "qsql_dataset_list", "datasets": datasets})
+
+
+@app.route("/api/v0/qsql/ask", methods=["POST"])
+def qsql_assistant_ask():
+    """QSQL 专用前端的一步式问答接口：语义解析、SQL 构造、只读执行。"""
+    request_model, error = _parse_request(SearchRequest, request.get_json(silent=True))
+    if error is not None:
+        return _error_response(f"参数异常: {error}", code=400)
+
+    dataset_id = request_model.dataset_id
+    question = request_model.question
+    start_time = time.time()
+    df = None
+    run_sql_ms = 0
+
+    try:
+        semantic_request = SemanticQueryRequest(
+            dataset_id=dataset_id,
+            question=question,
+            history=request_model.history,
+        )
+
+        def _execute_semantic_plan(execution_plan):
+            nonlocal run_sql_ms
+            validation_payload = SQLExecutionPayload.from_execution_plan(
+                id="qsql_feedback_validation",
+                question=question,
+                execution_plan=execution_plan,
+            ).ensure_select_query()
+            run_sql_started_at = time.time()
+            result_df = vn.run_sql(sql=validation_payload.sql)
+            run_sql_ms += int((time.time() - run_sql_started_at) * 1000)
+            return result_df
+
+        if hasattr(__semantic_query_service, "prepare_query_with_feedback"):
+            parse_response, df = __semantic_query_service.prepare_query_with_feedback(
+                semantic_request,
+                execute_plan=_execute_semantic_plan,
+            )
+            sql_payload = _build_sql_execution_payload_from_parse(
+                question=question,
+                parse_response=parse_response,
+            )
+        else:
+            sql_payload, parse_response = _build_sql_execution_payload(
+                dataset_id=dataset_id,
+                question=question,
+                history=request_model.history,
+            )
+
+        timings = parse_response.timings or SemanticStageTimings(
+            catalog_load_ms=0,
+            semantic_agent_ms=0,
+            sql_build_ms=0,
+            total_ms=0,
+        )
+        semantic_parse_ms = timings.total_ms
+        _cache_sql_execution_payload(sql_payload)
+
+        if df is None:
+            run_sql_started_at = time.time()
+            df = vn.run_sql(sql=sql_payload.sql)
+            run_sql_ms = int((time.time() - run_sql_started_at) * 1000)
+        cache.set(id=sql_payload.id, field="df", value=df)
+        records = _dataframe_to_records(df)
+        total_ms = int((time.time() - start_time) * 1000)
+        _record_route_event(
+            "/api/v0/qsql/ask",
+            status="success",
+            dataset_id=dataset_id,
+            request_id=sql_payload.id,
+            question_hash=_qsql_hash(question),
+            catalog_load_ms=timings.catalog_load_ms,
+            semantic_agent_ms=timings.semantic_agent_ms,
+            semantic_parse_ms=semantic_parse_ms,
+            sql_build_ms=timings.sql_build_ms,
+            run_sql_ms=run_sql_ms,
+            total_ms=total_ms,
+            sql_hash=_qsql_hash(sql_payload.sql),
+            row_count=len(records),
+        )
+        return jsonify(
+            {
+                "type": "qsql_answer",
+                "status": "success",
+                "id": sql_payload.id,
+                "dataset_id": dataset_id,
+                "question": question,
+                "sql": sql_payload.sql,
+                "columns": list(df.columns),
+                "rows": records,
+                "row_count": len(records),
+                "semantic_query": (
+                    _serialize_model(parse_response.semantic_query)
+                    if parse_response.semantic_query is not None
+                    else None
+                ),
+                "execution_plan": (
+                    _serialize_model(parse_response.execution_plan)
+                    if parse_response.execution_plan is not None
+                    else None
+                ),
+                "timings": _serialize_model(timings),
+                "message": f"已生成受控 SQL 并返回 {len(records)} 行结果。",
+            }
+        )
+    except ValueError as exc:
+        total_ms = int((time.time() - start_time) * 1000)
+        _record_route_event(
+            "/api/v0/qsql/ask",
+            status="clarification",
+            dataset_id=dataset_id,
+            request_id=None,
+            question_hash=_qsql_hash(question),
+            total_ms=total_ms,
+            error_type=type(exc).__name__,
+            error_message=str(exc),
+        )
+        return jsonify(
+            {
+                "type": "qsql_answer",
+                "status": "clarification",
+                "dataset_id": dataset_id,
+                "question": question,
+                "message": str(exc),
+            }
+        ), 400
+    except Exception as exc:
+        total_ms = int((time.time() - start_time) * 1000)
+        _record_route_event(
+            "/api/v0/qsql/ask",
+            status="error",
+            dataset_id=dataset_id,
+            request_id=None,
+            question_hash=_qsql_hash(question),
+            total_ms=total_ms,
+            error_type=type(exc).__name__,
+            error_message=str(exc),
+        )
+        return jsonify(
+            {
+                "type": "qsql_answer",
+                "status": "error",
+                "dataset_id": dataset_id,
+                "question": question,
+                "message": f"SQL 问答失败: {exc}",
+            }
+        ), 500
 
 
 @app.route("/")

@@ -134,12 +134,13 @@ flowchart TB
 这不是一个“任意复杂查询都能自动搞定”的项目，当前更适合：
 
 - 单表或宽表的数据问答
+- 语义目录中已显式声明关系路径的受控多表联查
 - 结构化聚合查询
 - 指标、维度、时间范围明确的业务分析
 
 当前不把这些当作主目标：
 
-- 任意多表自由 join
+- 未建模关系的任意自由 join
 - 强开放式 SQL 生成
 - 长文本条件推理型查询
 - 无语义配置前提下的复杂企业口径分析
@@ -201,6 +202,22 @@ QUESTION_SQL_DISTANCE_FILTER_ENABLED=false
 ```bash
 python app.py
 ```
+
+或使用 Docker：
+
+```bash
+docker compose up -d --build
+```
+
+默认访问：
+
+- 前端工作台：`http://127.0.0.1:5005/`
+- 数据集列表：`http://127.0.0.1:5005/api/v0/qsql/datasets`
+- 一步式问答：`POST http://127.0.0.1:5005/api/v0/qsql/ask`
+
+本地演示 `.env` 默认启用 `QSQL_ALLOW_UNAUTHENTICATED=true`，并使用
+`resources/uploads/online_retail/online_retail.sqlite3` 作为 SQLite 示例数据源。
+生产部署时建议配置 `SECRET_ACCESS_KEY` 并关闭无鉴权访问。
 
 默认会加载：
 

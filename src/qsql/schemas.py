@@ -430,6 +430,8 @@ class SemanticQueryDraft(ValidateRequest):
     filters: list[SemanticFilter] = Field(default_factory=list)
     time_range: Optional[SemanticTimeRange] = None
     metric_version_key: Optional[str] = None
+    order_by_metric: Optional[str] = None
+    limit: Optional[int] = Field(default=None, ge=1, le=1000)
     needs_clarification: bool = False
     clarification_question: Optional[str] = None
 
@@ -440,6 +442,10 @@ class SemanticQueryDraft(ValidateRequest):
             self.metric_keys = [self.metric_key]
         elif self.metric_key not in self.metric_keys:
             self.metric_keys = [self.metric_key, *self.metric_keys]
+        if self.order_by_metric is not None:
+            self.order_by_metric = self.order_by_metric.strip().lower()
+            if self.order_by_metric not in {"asc", "desc"}:
+                raise ValueError("order_by_metric 仅支持 asc 或 desc")
         return self
 
 
@@ -480,6 +486,8 @@ class QueryExecutionPlan(ValidateRequest):
     metric_keys: list[str] = Field(default_factory=list)
     metric_labels: list[str] = Field(default_factory=list)
     group_by_dimension_keys: list[str] = Field(default_factory=list)
+    order_by_metric: Optional[str] = None
+    limit: Optional[int] = Field(default=None, ge=1, le=1000)
 
     @model_validator(mode="after")
     def _sync_metric_lists(self) -> "QueryExecutionPlan":

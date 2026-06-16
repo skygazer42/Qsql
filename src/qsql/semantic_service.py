@@ -122,6 +122,8 @@ class SemanticQueryService:
                 else None
             ),
             "metric_version_key": semantic_query.metric_version_key,
+            "order_by_metric": semantic_query.order_by_metric,
+            "limit": semantic_query.limit,
             "needs_clarification": semantic_query.needs_clarification,
             "clarification_question": semantic_query.clarification_question,
         }

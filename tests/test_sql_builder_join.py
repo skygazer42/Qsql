@@ -154,6 +154,19 @@ def test_build_query_execution_plan_supports_declared_join_path(tmp_path: Path):
     assert "customer_level = 'VIP'" in plan.sql
 
 
+def test_build_query_execution_plan_supports_metric_ranking_limit(tmp_path: Path):
+    semantic_dir = _write_join_catalog(tmp_path, include_relationships=True)
+
+    catalog = load_semantic_catalog("sales_join", base_dir=semantic_dir)
+    draft = _join_draft()
+    draft.order_by_metric = "desc"
+    draft.limit = 5
+    plan = build_query_execution_plan(catalog=catalog, semantic_query=draft)
+
+    assert "ORDER BY metric_value DESC" in plan.sql
+    assert plan.sql.endswith("LIMIT 5")
+
+
 def test_build_query_execution_plan_rejects_undeclared_join_path(tmp_path: Path):
     semantic_dir = _write_join_catalog(tmp_path, include_relationships=False)
 
